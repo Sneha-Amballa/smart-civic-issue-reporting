@@ -40,6 +40,7 @@ const initDb = async () => {
             )
         `;
 
+
         // Add AI columns if they don't exist (Manual migration)
         try {
             await sql`ALTER TABLE issues ADD COLUMN IF NOT EXISTS ai_status VARCHAR(20) DEFAULT 'Pending'`;
@@ -47,7 +48,21 @@ const initDb = async () => {
             await sql`ALTER TABLE issues ADD COLUMN IF NOT EXISTS ai_reason TEXT`;
             console.log("AI columns added to 'issues' table.");
         } catch (alterErr) {
-            console.log("AI columns might already exist or error:", alterErr.message);
+            console.log("AI columns might already exist or error in issues:", alterErr.message);
+        }
+
+        // Add Officer columns to Users table
+        try {
+            await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS department VARCHAR(100)`;
+            await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS designation VARCHAR(100)`;
+            await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS account_status VARCHAR(20) DEFAULT 'PENDING'`;
+            await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS document_url TEXT`;
+            await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_score DECIMAL(5,2)`;
+            await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_result VARCHAR(20)`;
+            await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_reason TEXT`;
+            console.log("Officer columns added to 'users' table.");
+        } catch (alterErr) {
+            console.log("Officer columns might already exist or error in users:", alterErr.message);
         }
 
         console.log('Tables "users" and "issues" created successfully (if they didn\'t exist).');

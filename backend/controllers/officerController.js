@@ -1,0 +1,226 @@
+const sql = require('../db');
+const axios = require('axios');
+const fs = require('fs');
+const pdf = require('pdf-parse');
+const cloudinary = require('cloudinary').v2;
+const Tesseract = require('tesseract.js');
+
+// 🔐 Cloudinary config
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// ==============================
+// OFFICER REGISTRATION
+// ==============================
+exports.registerOfficer = async (req, res) => {
+    const file = req.file;
+    console.log("Register Officer: Request received");
+
+    try {
+        const { name, email, phone, department, designation } = req.body;
+        console.log("Parsed body:", { name, email, phone, department, designation });
+        console.log("File details:", file ? { path: file.path, mimetype: file.mimetype, size: file.size } : "No file");
+
+        // 1️⃣ Validate input
+        if (!file) {
+            return res.status(400).json({ message: 'Supporting document is required' });
+        }
+
+        console.log("Checking if user exists...");
+        const userCheck = await sql`SELECT 1 FROM users WHERE email = ${email}`;
+        if (userCheck.length > 0) {
+            console.log("User already exists.");
+            try { fs.unlinkSync(file.path); } catch (e) { console.error("Failed to delete temp file:", e); }
+            return res.status(400).json({ message: 'Officer already registered with this email' });
+        }
+
+        // 2️⃣ EXTRACT TEXT FIRST (IMPORTANT)
+        console.log("Starting text extraction...");
+        let extractedText = "";
+
+        if (file.mimetype === 'application/pdf') {
+            try {
+                const buffer = fs.readFileSync(file.path);
+                const data = await pdf(buffer);
+                extractedText = data.text || "";
+                console.log("PDF text length:", extractedText.length);
+            } catch (err) {
+                console.error("PDF parse error:", err.message);
+            }
+        }
+
+        // 3️⃣ OCR FALLBACK (for scanned PDFs / images)
+        if (!extractedText || extractedText.trim().length < 50) {
+            console.log("Running OCR fallback...");
+            try {
+                const ocrResult = await Tesseract.recognize(file.path, "eng");
+                extractedText = ocrResult.data.text || "";
+                console.log("OCR text length:", extractedText.length);
+            } catch (err) {
+                console.error("OCR failed:", err.message);
+            }
+        }
+
+        // 4️⃣ HARD VALIDATION
+        if (!extractedText || extractedText.trim().length < 100) {
+            console.log("Text extraction failed or insufficient text.");
+            return res.status(400).json({
+                message: "Document content is not readable. Please upload a clear text-based PDF."
+            });
+        }
+
+        // 5️⃣ Upload to Cloudinary (AFTER extraction)
+        console.log("Uploading to Cloudinary...");
+        let documentUrl;
+        try {
+            const uploadResult = await cloudinary.uploader.upload(file.path, {
+                folder: 'officer_documents',
+                resource_type: 'auto'
+            });
+            documentUrl = uploadResult.secure_url;
+            console.log("Cloudinary Upload Success:", documentUrl);
+            try { fs.unlinkSync(file.path); } catch (e) { console.error("Failed to delete temp file:", e); }
+        } catch (err) {
+            console.error("Cloudinary upload failed:", err.message);
+            return res.status(500).json({ message: "Document upload failed: " + err.message });
+        }
+
+        // 6️⃣ AI Screening
+        console.log("Calling AI Service...");
+        let aiResult = {
+            ai_score: 0,
+            ai_result: "NOT_CHECKED",
+            ai_reason: "AI Service Unavailable"
+        };
+
+        try {
+            const aiPayload = {
+                text: extractedText,
+                department,
+                designation: designation || "Officer",
+                document_url: documentUrl
+            };
+
+            const aiResponse = await axios.post(
+                "http://localhost:8000/screen-officer",
+                aiPayload,
+                { timeout: 10000 }
+            );
+
+            aiResult = aiResponse.data;
+            console.log("AI Result:", aiResult);
+
+        } catch (err) {
+            console.error("AI call failed:", err.message);
+            // We don't block registration if AI fails, just log it.
+        }
+
+        // 7️⃣ Decide account status based on AI Score
+        let accountStatus;
+        let isVerified = false;
+
+        if (aiResult.ai_result === "APPROVED") {
+            accountStatus = "ACTIVE";
+            isVerified = true;
+        } else if (aiResult.ai_result === "PENDING_REVIEW") {
+            accountStatus = "ADMIN_REVIEW"; // 🟡 Admin only here
+            isVerified = false;
+        } else {
+            accountStatus = "REJECTED"; // ❌ No access
+            isVerified = false;
+        }
+
+        // 8️⃣ Save officer
+        console.log("Inserting user into database...");
+        try {
+            const newUser = await sql`
+                INSERT INTO users (
+                    name, email, phone, role, department,
+                    account_status, document_url,
+                    ai_score, ai_result, ai_reason,
+                    is_verified
+                ) VALUES (
+                    ${name}, ${email}, ${phone}, 'officer', ${department},
+                    ${accountStatus}, ${documentUrl},
+                    ${aiResult.ai_score}, ${aiResult.ai_result}, ${aiResult.ai_reason},
+                    ${isVerified}
+                )
+                RETURNING *
+            `;
+            console.log("User inserted successfully:", newUser[0]);
+
+            return res.status(201).json({
+                message: "Officer registered successfully",
+                officer: newUser[0]
+            });
+        } catch (dbErr) {
+            console.error("Database Insert Error:", dbErr);
+            throw new Error("Database error: " + dbErr.message);
+        }
+
+    } catch (err) {
+        console.error("Officer registration error CRITICAL:", err);
+        if (file && fs.existsSync(file.path)) {
+            try { fs.unlinkSync(file.path); } catch { }
+        }
+        return res.status(500).json({
+            message: "Server error: " + err.message,
+            stack: err.stack
+        });
+    }
+};
+
+// ==============================
+// OFFICER ISSUE MANAGEMENT
+// ==============================
+exports.getDepartmentIssues = async (req, res) => {
+    try {
+        const { department } = req.user; // From Token
+        console.log("Fetching issues for department:", department);
+
+        if (!department) {
+            return res.status(400).json({ message: "Officer department not found in token" });
+        }
+
+        const issues = await sql`
+            SELECT * FROM issues 
+            WHERE LOWER(category) = LOWER(${department}) 
+            OR assigned_officer_id = ${req.user.id}
+            ORDER BY created_at DESC
+        `;
+
+        res.json(issues);
+    } catch (err) {
+        console.error("Get Officer Issues Error:", err);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+exports.updateIssueStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body; // 'In Progress', 'Resolved'
+
+        if (!['In Progress', 'Resolved', 'Rejected'].includes(status)) {
+            return res.status(400).json({ message: "Invalid status" });
+        }
+
+        const result = await sql`
+            UPDATE issues
+            SET status = ${status}, updated_at = NOW(), assigned_officer_id = ${req.user.id}
+            WHERE id = ${id}
+            RETURNING *
+        `;
+
+        if (result.length === 0) return res.status(404).json({ message: "Issue not found" });
+
+        res.json({ message: "Issue updated", issue: result[0] });
+
+    } catch (err) {
+        console.error("Update Issue Status Error:", err);
+        res.status(500).json({ message: "Server error" });
+    }
+};

@@ -58,7 +58,13 @@ const OTPVerify = () => {
                 if (user.preferred_language) {
                     localStorage.setItem('language', user.preferred_language);
                 }
-                navigate('/dashboard');
+                if (user.role === "admin") {
+                    navigate("/admin/dashboard");
+                } else if (user.role === "officer") {
+                    navigate("/officer/dashboard");
+                } else {
+                    navigate("/dashboard"); // Citizen dashboard
+                }
             }
 
         } catch (err) {

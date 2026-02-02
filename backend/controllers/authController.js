@@ -3,8 +3,8 @@ const jwt = require('jsonwebtoken');
 const otpGenerator = require('otp-generator');
 const { sendOTP } = require('../utils/emailService');
 
-const generateToken = (id, role, language) => {
-    return jwt.sign({ id, role, language }, process.env.JWT_SECRET, { expiresIn: '30d' });
+const generateToken = (id, email, role, language, department) => {
+    return jwt.sign({ id, email, role, language, department }, process.env.JWT_SECRET, { expiresIn: '30d' });
 };
 
 // 1. Citizen Signup
@@ -144,7 +144,8 @@ exports.loginVerify = async (req, res) => {
         // Clear OTP
         await sql`UPDATE users SET otp = NULL, otp_expiry = NULL WHERE id = ${user.id}`;
 
-        const token = generateToken(user.id, user.role, user.preferred_language);
+
+        const token = generateToken(user.id, user.email, user.role, user.preferred_language, user.department);
 
         res.json({
             message: 'Login successful',
@@ -160,5 +161,57 @@ exports.loginVerify = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// 6. Admin Login (Password based)
+exports.adminLogin = async (req, res) => {
+    const { email, password } = req.body;
+
+    try {
+        console.log("Admin Login Attempt:", { email });
+
+        // 1. Check strict credentials against env
+        if (email !== process.env.ADMIN_EMAIL) {
+            console.log("Admin Login Failed: Email mismatch. Expected:", process.env.ADMIN_EMAIL, "Got:", email);
+            return res.status(401).json({ message: "Invalid admin email" });
+        }
+
+        if (password !== process.env.ADMIN_SECRET) {
+            console.log("Admin Login Failed: Password mismatch.");
+            return res.status(401).json({ message: "Invalid admin secret" });
+        }
+
+        // 2. Check if admin user exists in DB to get ID
+        const userResult = await sql`SELECT * FROM users WHERE email = ${email}`;
+
+        let adminUser;
+        if (userResult.length === 0) {
+            return res.status(404).json({ message: "Admin user record not found in database." });
+        } else {
+            adminUser = userResult[0];
+            if (adminUser.role !== 'admin') {
+                return res.status(403).json({ message: "User exists but is not an admin." });
+            }
+        }
+
+        // 3. Generate Token
+        const token = generateToken(adminUser.id, adminUser.email, 'admin', 'en', null);
+
+        res.json({
+            message: 'Admin login successful',
+            token,
+            user: {
+                id: adminUser.id,
+                name: adminUser.name,
+                email: adminUser.email,
+                role: 'admin',
+                preferred_language: 'en'
+            }
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error during admin login" });
     }
 };

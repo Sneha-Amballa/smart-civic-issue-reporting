@@ -9,6 +9,11 @@ import OTPVerify from './pages/OTPVerify';
 import Dashboard from './pages/Dashboard';
 import ReportIssue from './pages/ReportIssue';
 import IssueDetails from './pages/IssueDetails';
+import SelectRole from './pages/SelectRole';
+import OfficerRegister from './pages/OfficerRegister';
+import OfficerScreening from './pages/OfficerScreening';
+import AdminDashboard from './pages/AdminDashboard';
+import OfficerDashboard from './pages/OfficerDashboard';
 
 function App() {
   const { i18n } = useTranslation();
@@ -31,7 +36,14 @@ function App() {
         {/* Home opens first */}
         <Route path="/" element={<Home />} />
 
-        <Route path="/signup" element={<Signup />} />
+        {/* Role Selection & Signup Flows */}
+        <Route path="/signup" element={<SelectRole />} />
+        <Route path="/citizen-signup" element={<Signup />} />
+
+        {/* Officer Flow */}
+        <Route path="/officer/register" element={<OfficerRegister />} />
+        <Route path="/officer/screening" element={<OfficerScreening />} />
+
         <Route path="/login" element={<Login />} />
         <Route path="/verify-otp" element={<OTPVerify />} />
 
@@ -56,6 +68,22 @@ function App() {
           element={
             <ProtectedRoute>
               <IssueDetails />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/officer/dashboard"
+          element={
+            <ProtectedRoute>
+              <OfficerDashboard />
             </ProtectedRoute>
           }
         />

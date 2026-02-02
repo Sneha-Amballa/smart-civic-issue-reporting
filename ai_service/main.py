@@ -1,110 +1,187 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer, util
-from PIL import Image
-import io
-import base64
-import numpy as np
 import uvicorn
 
 app = FastAPI()
 
-# Load Models (Load once on startup)
-# Using a lightweight CLIP model and S-BERT
-print("Loading AI Models... This may take a moment.")
-vision_model = SentenceTransformer('clip-ViT-B-32')
-text_model = SentenceTransformer('all-MiniLM-L6-v2')
-print("AI Models Loaded.")
+print("Loading text model...")
+text_model = SentenceTransformer("all-MiniLM-L6-v2")
+print("Text model loaded.")
 
-# Candidate Categories with descriptions for matching
-CATEGORIES = {
-    "Road / Pothole": ["A photo of a pothole", "damaged road", "cracked asphalt", "road construction"],
-    "Garbage": ["A photo of garbage", "pile of trash", "waste dump", "overflowing dustbin", "litter"],
-    "Water Leakage": ["A photo of water leakage", "burst pipe", "flooded street", "stagnant water"],
-    "Streetlight": ["A photo of a streetlight", "broken street lamp", "dark street", "non-functional light"],
-    "Public Safety": ["A photo of a safety hazard", "open manhole", "hanging wires", "fallen tree"],
-    "Other": ["Civic issue", "public problem"]
+# ===============================
+# DEPARTMENT KNOWLEDGE BASE
+# ===============================
+DEPARTMENT_PROFILES = {
+    "roads": [
+        "road maintenance",
+        "potholes",
+        "street repair",
+        "asphalt",
+        "pavement",
+        "footpath",
+        "road infrastructure",
+        "public works",
+        "road safety",
+        "street inspection",
+        "drainage along roads",
+        "civic road complaints"
+    ],
+    "water": [
+        "water supply",
+        "pipeline",
+        "water leakage",
+        "drinking water",
+        "valve repair",
+        "water distribution"
+    ],
+    "sanitation": [
+        "garbage",
+        "waste collection",
+        "cleanliness",
+        "sanitation workers",
+        "solid waste"
+    ],
+    "streetlight": [
+        "streetlight",
+        "lamp post",
+        "lighting",
+        "electrical maintenance"
+    ]
 }
 
-class AnalyzeRequest(BaseModel):
-    image: str # Base64 string
+class OfficerScreeningRequest(BaseModel):
     text: str
+    department: str
+    designation: str | None = None
+    document_url: str | None = None
 
-@app.get("/")
-def home():
-    return {"status": "AI Service Running"}
+def normalize(text: str) -> str:
+    return text.lower().strip()
 
-@app.post("/analyze")
-def analyze_issue(request: AnalyzeRequest):
+@app.post("/screen-officer")
+def screen_officer(request: OfficerScreeningRequest):
     try:
-        # 1. Decode Image
-        try:
-            # Handle data:image/png;base64, prefix if present
-            img_str = request.image
-            if "," in img_str:
-                img_str = img_str.split(",")[1]
-            
-            image_data = base64.b64decode(img_str)
-            image = Image.open(io.BytesIO(image_data))
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Invalid image data: {str(e)}")
+        if not request.text or len(request.text.strip()) < 100:
+            return {
+                "ai_score": 0.0,
+                "ai_result": "NOT_CHECKED",
+                "ai_reason": "Insufficient readable document text"
+            }
 
-        # 2. Image Analysis (CLIP)
-        # We encode the image and compare against category descriptions
-        image_embedding = vision_model.encode(image)
-        
-        image_scores = {}
-        for cat, prompts in CATEGORIES.items():
-            # Compare image against prompts for this category
-            prompt_embeddings = vision_model.encode(prompts)
-            # Compute cosine similarity
-            cos_scores = util.cos_sim(image_embedding, prompt_embeddings)[0]
-            # Take max score for this category
-            image_scores[cat] = float(np.max(cos_scores.numpy()))
+        department = normalize(request.department)
+        if department not in DEPARTMENT_PROFILES:
+            return {
+                "ai_score": 0.0,
+                "ai_result": "FLAGGED",
+                "ai_reason": f"Unknown department: {request.department}"
+            }
 
-        # 3. Text Analysis (S-BERT)
-        text_scores = {}
-        if request.text and len(request.text.strip()) > 0:
-            text_embedding = text_model.encode(request.text)
-            for cat, prompts in CATEGORIES.items():
-                prompt_embeddings = text_model.encode(prompts)
-                cos_scores = util.cos_sim(text_embedding, prompt_embeddings)[0]
-                text_scores[cat] = float(np.max(cos_scores.numpy()))
+        doc_text = normalize(request.text)
+        keywords = DEPARTMENT_PROFILES[department]
+
+        keyword_hits = sum(1 for kw in keywords if kw in doc_text)
+        keyword_score = keyword_hits / len(keywords)
+
+        reference_text = f"{department} department responsibilities include " + ", ".join(keywords)
+
+        doc_embedding = text_model.encode(doc_text)
+        ref_embedding = text_model.encode(reference_text)
+
+        semantic_score = float(util.cos_sim(doc_embedding, ref_embedding)[0][0])
+        final_score = (semantic_score * 0.6) + (keyword_score * 0.4)
+
+        if final_score >= 0.60:
+            result = "APPROVED"
+            reason = "Strong match with department responsibilities"
+        elif final_score >= 0.35:
+            result = "PENDING_REVIEW"
+            reason = "Moderate match, requires manual verification"
         else:
-            # If no text, use 0
-            for cat in CATEGORIES:
-                text_scores[cat] = 0.0
-
-        # 4. Fusion
-        # Weighted average: Image 60%, Text 40% (since image is primary evidence)
-        final_scores = {}
-        for cat in CATEGORIES:
-            img_s = image_scores.get(cat, 0)
-            txt_s = text_scores.get(cat, 0)
-            
-            # Boost if both are high
-            if request.text:
-                final_scores[cat] = (img_s * 0.6) + (txt_s * 0.4)
-            else:
-                final_scores[cat] = img_s
-
-        # 5. Result
-        best_category = max(final_scores, key=final_scores.get)
-        confidence = final_scores[best_category]
-        
-        # Threshold for verification
-        ai_status = "Verified" if confidence > 0.25 else "Flagged" # Open threshold
+            result = "REJECTED"
+            reason = "Weak or no match with department responsibilities"
 
         return {
-            "category": best_category,
-            "ai_status": ai_status,
-            "ai_confidence": round(confidence, 4),
-            "ai_reason": f"Detected {best_category} with {round(confidence*100, 1)}% confidence based on visual and semantic analysis."
+            "ai_score": round(final_score, 2),
+            "ai_result": result,
+            "ai_reason": reason
         }
 
     except Exception as e:
-        print(f"Error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        print("AI ERROR:", str(e))
+        raise HTTPException(status_code=500, detail="AI screening failed")
+
+@app.get("/")
+def health():
+    return {"status": "Officer AI Service Running"}
+
+
+class IssueAnalysisRequest(BaseModel):
+    image: str | None = None
+    text: str | None = None
+
+@app.post("/analyze")
+def analyze_issue(request: IssueAnalysisRequest):
+    try:
+        text = request.text or ""
+        # If no text, we can't do much with just local embedding model for images
+        # In a real app, we would use a VLM (Vision Language Model) here.
+        if not text or len(text.strip()) < 5:
+             return {
+                "category": "Uncategorized",
+                "ai_status": "PENDING_REVIEW",
+                "ai_confidence": 0.0,
+                "ai_reason": "No description provided for analysis"
+            }
+
+        # Classify based on text
+        norm_text = normalize(text)
+        embedding = text_model.encode(norm_text)
+        
+        best_category = "Uncategorized"
+        best_score = 0.0
+        
+        for dept, keywords in DEPARTMENT_PROFILES.items():
+             # Create a prototype sentence for the department
+             ref_text = f"This is an issue regarding {dept}. " + ", ".join(keywords)
+             ref_embedding = text_model.encode(ref_text)
+             
+             score = float(util.cos_sim(embedding, ref_embedding)[0][0])
+             
+             if score > best_score:
+                 best_score = score
+                 best_category = dept.capitalize()
+
+        if best_score > 0.4:
+            return {
+                "category": best_category,
+                "ai_status": "CATEGORIZED",
+                "ai_confidence": round(best_score, 2),
+                "ai_reason": f"Matched with {best_category} related terms"
+            }
+        elif best_score < 0.25:
+             return {
+                "category": "Flagged",
+                "ai_status": "FLAGGED",
+                "ai_confidence": round(best_score, 2),
+                "ai_reason": "Content seems irrelevant or unintelligible"
+            }
+        else:
+             return {
+                "category": "Uncategorized",
+                "ai_status": "PENDING_REVIEW",
+                "ai_confidence": round(best_score, 2),
+                "ai_reason": "Low confidence in automatic categorization"
+            }
+
+    except Exception as e:
+        print("ANALYSIS ERROR:", str(e))
+        return {
+            "category": "Uncategorized",
+            "ai_status": "ERROR",
+            "ai_confidence": 0.0,
+            "ai_reason": "AI Service Error"
+        }
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
