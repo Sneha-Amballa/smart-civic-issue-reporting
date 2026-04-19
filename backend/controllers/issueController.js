@@ -121,7 +121,8 @@ exports.reportIssue = async (req, res) => {
         let masterIssueId = null;
 
         // HARD SAFETY NET: Explicitly block anything below 0.85 confidence
-        const isLowConfidence = aiResult.ai_confidence < 0.85;
+        // RELAXED SAFETY NET: Lower threshold to 0.70 to avoid flagging too many valid reports
+        const isLowConfidence = aiResult.ai_confidence < 0.70;
 
         if (aiResult.ai_status !== 'CATEGORIZED' || aiResult.category === 'Flagged' || isLowConfidence) {
             issueStatus = 'Flagged';
@@ -320,8 +321,9 @@ exports.addComment = async (req, res) => {
             return res.status(403).json({ message: 'Only citizens and officers can comment on issues' });
         }
 
+        console.log(`[ADD_COMMENT] Received payload for issue ${id}:`, req.body);
         if (!comment || !comment.trim()) {
-            return res.status(400).json({ message: 'Comment cannot be empty' });
+            return res.status(400).json({ message: 'Comment cannot be empty, received: ' + JSON.stringify(req.body) });
         }
 
         const issue = await sql`SELECT id FROM issues WHERE id = ${id}`;
@@ -426,8 +428,8 @@ exports.getMyIssues = async (req, res) => {
             const desc = getLocalizedText(issue.description, userLang);
             return {
                 ...issue,
-                description: desc || issue.voice_text, // Return text only
-                voice_text: desc || issue.voice_text, // Legacy support
+                description: desc || issue.voice_text, // Returns localized text
+                original_text: issue.voice_text, // Keeps original input
                 // Clean up raw JSON to prevent leaking all languages
                 original_language: undefined
             };
@@ -466,7 +468,7 @@ exports.getAllIssues = async (req, res) => {
             return {
                 ...issue,
                 description: desc || issue.voice_text,
-                voice_text: desc || issue.voice_text
+                original_text: issue.voice_text
             };
         });
 
@@ -507,8 +509,8 @@ exports.getIssueDetails = async (req, res) => {
         const userLang = req.user.language || req.user.preferred_language || 'en';
 
         const desc = getLocalizedText(issue.description, userLang);
-        issue.description = desc || issue.voice_text;
-        issue.voice_text = desc || issue.voice_text;
+        issue.translated_description = desc || issue.voice_text;
+        // Keep original voice_text as is
 
         if (issue.resolution_note) {
             issue.resolution_note = getLocalizedText(issue.resolution_note, userLang);

@@ -8,9 +8,15 @@ import uvicorn
 import base64
 import io
 import torch
+import numpy as np
 from langdetect import detect as detect_lang
+from contextlib import asynccontextmanager
 
-app = FastAPI()
+
+
+# app will be initialized after lifespan definition
+
+# ===============================
 
 # ===============================
 # LOAD MODELS (DEFERRED)
@@ -21,8 +27,9 @@ clip_processor = None
 translate_tokenizer = None
 translate_model = None
 
-@app.on_event("startup")
-def load_models():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
     global text_model, clip_model, clip_processor, translate_tokenizer, translate_model
     try:
         print("Loading SentenceTransformer...")
@@ -41,6 +48,14 @@ def load_models():
         print("Translation model loaded.")
     except Exception as e:
         print(f"Failed to load models during startup: {e}")
+    
+    yield
+    
+    # Shutdown
+    pass
+
+
+app = FastAPI(lifespan=lifespan)
 
 # ===============================
 # DEPARTMENT KNOWLEDGE BASE
@@ -142,10 +157,12 @@ CIVIC_PROMPTS = [
 ]
 
 TRAP_PROMPTS = [
-    "A private indoor room with ceiling fan, indoor lighting, furniture, or curtains",
-    "A close-up photo of a person or human face",
-    "A photo of paper, printed text, mobile screen, or digital display",
-    "A very blurry or dark image with no clear subject"
+    "A screenshot of a computer screen showing civic issue reports or forms",
+    "A printed document or paper with text about civic issues",
+    "A photo taken indoors of a computer screen or mobile phone displaying civic content",
+    "A close-up photo of a person reporting a civic issue",
+    "A very blurry, dark, or corrupted image with no recognizable civic infrastructure",
+    "A cartoon, drawing, or artificial image of civic problems"
 ]
 
 ISSUE_CATEGORIES = CIVIC_PROMPTS + TRAP_PROMPTS
@@ -195,11 +212,27 @@ def canonical_department(raw_department: str):
 
 def classify_image_from_base64(base64_str):
     try:
-        if "," in base64_str:
-            base64_str = base64_str.split(",")[1]
+        import requests
+        if base64_str.startswith("http"):
+            response = requests.get(base64_str, timeout=10)
+            image = Image.open(io.BytesIO(response.content)).convert("RGB")
+        else:
+            print(f"DEBUG: Image data length: {len(base64_str)}")
+            if "," in base64_str:
+                base64_str = base64_str.split(",")[1]
+            image_data = base64.b64decode(base64_str)
+            print("DEBUG: Image decoded.")
+            image = Image.open(io.BytesIO(image_data)).convert("RGB")
+            print(f"DEBUG: Image size: {image.size}")
 
-        image_data = base64.b64decode(base64_str)
-        image = Image.open(io.BytesIO(image_data)).convert("RGB")
+        # ADD: Skip obviously invalid images
+        width, height = image.size
+        if width < 50 or height < 50:
+            print(f"DEBUG: Image too small ({width}x{height}), skipping classification")
+            return None
+        if width * height < 10000:  # Less than 100x100 pixels
+            print(f"DEBUG: Image resolution too low ({width}x{height}), skipping classification")
+            return None
 
         inputs = clip_processor(
             text=ISSUE_CATEGORIES,
@@ -211,14 +244,17 @@ def classify_image_from_base64(base64_str):
         with torch.no_grad():
             outputs = clip_model(**inputs)
 
-        # Use sigmoid to get independent probabilities so 0.4 and 0.85 can co-exist
-        probs = torch.sigmoid(outputs.logits_per_image)[0].detach().numpy()
+        print(f"DEBUG: Logits shape: {outputs.logits_per_image.shape}")
+        # Use softmax to get mutually exclusive probabilities
+        probs = torch.softmax(outputs.logits_per_image, dim=1)[0].detach().cpu().numpy()
+        print(f"DEBUG: Probs: {probs}")
 
         civic_probs = probs[:len(CIVIC_PROMPTS)]
         trap_probs = probs[len(CIVIC_PROMPTS):]
 
         best_civic_idx = int(np.argmax(civic_probs))
         best_trap_idx = int(np.argmax(trap_probs))
+        print(f"DEBUG: Best Civic: {best_civic_idx} ({civic_probs[best_civic_idx]}), Best Trap: {best_trap_idx} ({trap_probs[best_trap_idx]})")
 
         return {
             "civic_score": float(civic_probs[best_civic_idx]),
@@ -234,6 +270,9 @@ def classify_image_from_base64(base64_str):
 
 
 def classify_text(text):
+    if text_model is None:
+        return None
+    
     norm_text = normalize(text)
 
     embedding = text_model.encode(norm_text)
@@ -299,17 +338,29 @@ class TranslationRequest(BaseModel):
 @app.post("/analyze")
 def analyze_issue(request: IssueAnalysisRequest):
     try:
+        print(f"DEBUG: Request received: image_present={request.image is not None}, text='{request.text}'")
 
         image_result = None
         text_result = None
 
         # IMAGE CLASSIFICATION
         if request.image:
+            print("DEBUG: Processing image...")
             image_result = classify_image_from_base64(request.image)
+            print(f"DEBUG: Image result: {image_result is not None}")
 
         # TEXT CLASSIFICATION
-        if request.text and len(request.text.strip()) >= 5:
+        if request.text and len(request.text.strip()) >= 1:
+            print(f"DEBUG: Calling classify_text with: '{request.text}'")
             text_result = classify_text(request.text)
+            print(f"DEBUG: Text result: {text_result}")
+        elif request.text and len(request.text.strip()) > 0:
+            # Handle short text with low confidence
+            text_result = {
+                "category": "Uncategorized",
+                "confidence": 0.1  # Low confidence for short text
+            }
+            print(f"DEBUG: Short text detected, using low confidence")
 
         # FUSION LOGIC AND FINAL DECISION
         if image_result:
@@ -317,17 +368,14 @@ def analyze_issue(request: IssueAnalysisRequest):
             civic_score = image_result["civic_score"]
             predicted_category = PROMPT_TO_DEPT.get(image_result["civic_prompt"], "Other")
 
-            # Final Decision Logic (Dictated by Rules)
-            # Step 1: Trap override (highest priority)
-            if trap_score > 0.5:
+            # Final Decision Logic (Improved)
+            # Step 1: Strong trap detection (high confidence invalid content)
+            if trap_score > 0.8:
                 category = "FLAGGED"
-            # Step 2: Conflict safety (prevents wrong 90% matches)
-            elif trap_score > 0.4 and civic_score > 0.85:
-                category = "FLAGGED"
-            # Step 3: Civic classification
-            elif civic_score > 0.85:
+            # Step 2: Civic classification (sufficient confidence)
+            elif civic_score > 0.7:
                 category = predicted_category
-            # Step 4: Uncertain cases
+            # Step 3: Uncertain cases
             else:
                 category = "REVIEW_REQUIRED"
 
@@ -341,22 +389,54 @@ def analyze_issue(request: IssueAnalysisRequest):
                  final_category = category
 
             # Multi-line Reason Format
+            reason_parts = [
+                f"Scene: {scene}",
+                f"Category: {final_category}",
+                f"Confidence: {round(final_confidence, 2)}",
+                "",
+                f"Reason:"
+            ]
+            
+            if trap_score > 0.5:
+                reason_parts.append(f"- FLAGGED: High confidence detection of invalid content ({round(trap_score, 2)})")
+                reason_parts.append(f"- This may be a screenshot, printed image, or photo taken indoors")
+            else:
+                reason_parts.append(f"- Scene detected: Civic ({round(civic_score, 2)}), Trap ({round(trap_score, 2)})")
+                
+            reason_parts.extend([
+                f"- Key objects: {image_result['best_overall_prompt']}",
+                f"- Final decision: {category}"
+            ])
+            
+            reason = "\n".join(reason_parts)
+        elif text_result:
+            # Text-only classification
+            final_category = text_result["category"]
+            final_confidence = text_result["confidence"]
+            ai_status = "CATEGORIZED" if final_confidence >= 0.7 else "FLAGGED"  # Lower threshold for text-only
             reason = (
-                f"Scene: {scene}\n"
                 f"Category: {final_category}\n"
                 f"Confidence: {round(final_confidence, 2)}\n\n"
                 f"Reason:\n"
-                f"- Scene detected: Civic ({round(civic_score, 2)}), Trap ({round(trap_score, 2)})\n"
-                f"- Key objects: {image_result['best_overall_prompt']}\n"
-                f"- Final decision: {category}"
+                f"- Text-based classification\n"
+                f"- Semantic similarity score: {round(final_confidence, 2)}"
             )
         else:
-            return {
-                "category": "Uncategorized",
-                "ai_status": "FLAGGED",
-                "ai_confidence": 0.0,
-                "ai_reason": "No valid image/text"
-            }
+            # No valid image or text - but provide better feedback
+            if request.text and len(request.text.strip()) > 0:
+                return {
+                    "category": "Uncategorized",
+                    "ai_status": "FLAGGED",
+                    "ai_confidence": 0.1,
+                    "ai_reason": f"Text too short for reliable classification. Please provide more details.\n\nText length: {len(request.text.strip())} characters"
+                }
+            else:
+                return {
+                    "category": "Uncategorized",
+                    "ai_status": "FLAGGED",
+                    "ai_confidence": 0.0,
+                    "ai_reason": "No valid image/text provided. Please include a photo and/or description of the issue."
+                }
 
         return {
             "category": final_category if final_category != "FLAGGED" else "Flagged",
@@ -583,6 +663,15 @@ def translate(request: TranslationRequest):
 @app.get("/")
 def health():
     return {"status": "AI Service Running"}
+
+
+@app.get("/debug")
+def debug():
+    return {
+        "text_model_loaded": text_model is not None,
+        "clip_model_loaded": clip_model is not None,
+        "translate_model_loaded": translate_model is not None
+    }
 
 
 if __name__ == "__main__":

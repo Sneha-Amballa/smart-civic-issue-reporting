@@ -58,7 +58,7 @@ const IssueDetails = () => {
         try {
             const token = localStorage.getItem('token');
             await axios.post(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/issues/${id}/comment`, {
-                text: newComment
+                comment: newComment
             }, { headers: { Authorization: `Bearer ${token}` } });
             setNewComment('');
             fetchIssueDetails();
@@ -114,17 +114,33 @@ const IssueDetails = () => {
                     {/* ISSUE DESCRIPTION & AI VERIFIED */}
                     <div className="card-v4 desc-ai-card">
                         <div className="desc-header">ISSUE DESCRIPTION</div>
-                        <p className="desc-text-v4">{issue.description || 'No description provided.'}</p>
+                        <p className="desc-text-v4">{issue.voice_text || issue.description || 'No description provided.'}</p>
+                        
+                        {issue.translated_description && issue.translated_description !== issue.voice_text && (
+                            <div className="translation-box">
+                                <span className="translation-label">Official Translation ({issue.language}):</span>
+                                <p className="translated-text-v4">{issue.translated_description}</p>
+                            </div>
+                        )}
+
                         <div className="divider-line" />
                         <div className={`ai-verification-box ${isVerified ? 'verified-bg' : 'pending-bg'}`}>
                             <div className="ai-box-left">
                                 {isVerified ? <CheckIcon className="check-success" /> : <VerifiedIcon className="check-pending" />}
                                 <span>
-                                    <strong>{isVerified ? 'AI verified' : 'Verification Pending'}</strong> · {confidenceScore}% confidence
+                                    <strong>{isVerified ? 'AI Verified' : 'Manual Review'}</strong> · {confidenceScore}% confidence
                                 </span>
                             </div>
                             <div className="ai-box-right">
-                                {isVerified ? 'Image matches category' : 'Awaiting manual review'}
+                                {issue.ai_reason ? (
+                                    <div className="ai-reason-log">
+                                        {issue.ai_reason.split('\n').filter(l => l.trim()).map((line, idx) => (
+                                            <div key={idx} className="ai-log-line">{line}</div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    isVerified ? 'Visual patterns match category' : 'Awaiting officer verification'
+                                )}
                             </div>
                             <div className="ai-progress-v4">
                                 <div className={`ai-fill-v4 ${isVerified ? 'bg-success' : 'bg-pending'}`} style={{ width: `${confidenceScore}%` }}></div>
@@ -148,6 +164,29 @@ const IssueDetails = () => {
                                 <button className="btn-post-v4" onClick={handleCommentSubmit}>Post update</button>
                             </div>
                         </div>
+
+                        {comments.length > 0 && (
+                            <div className="comments-list-v4">
+                                {comments.map((c) => (
+                                    <div key={c.id} className="comment-item-v4">
+                                        <div className="comment-avatar">
+                                            {c.name ? c.name[0].toUpperCase() : 'U'}
+                                        </div>
+                                        <div className="comment-content">
+                                            <div className="comment-header-v4">
+                                                <span className="comment-author">{c.name}</span>
+                                                {c.role === 'officer' && <span className="comment-badge">Officer</span>}
+                                                {c.role === 'admin' && <span className="comment-badge" style={{background: '#FEE2E2', color: '#991B1B'}}>Admin</span>}
+                                                <span className="comment-time">
+                                                    {new Date(c.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                            </div>
+                                            <p className="comment-text">{c.comment}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
 
