@@ -24,7 +24,7 @@ import HistoryRoundedIcon from '@mui/icons-material/HistoryRounded';
 import Loading from '../components/Loading';
 
 const CitizenProfile = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
 
     const [data, setData] = useState(null);
@@ -257,15 +257,15 @@ const CitizenProfile = () => {
                 {/* 3. INTERACTIVE STAT CARDS */}
                 <section style={{ marginBottom: '2rem' }}>
                     <h3 style={{ marginBottom: '1rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <BarChartRoundedIcon color="primary" /> Activity Impact
+                        <BarChartRoundedIcon color="primary" /> {t('activity_impact')}
                     </h3>
                     <div className="interactive-stats-grid">
                         <div className="gamified-stat-card reported">
                             <div className="g-stat-icon"><LocationOnRoundedIcon fontSize="inherit" /></div>
                             <div className="g-stat-content">
                                 <div className="g-stat-value animate-number">{totalReported}</div>
-                                <div className="g-stat-label">Reported Issues</div>
-                                <div className="g-stat-trend trend-neutral">All time reports</div>
+                                <div className="g-stat-label">{t('reported_issues_label')}</div>
+                                <div className="g-stat-trend trend-neutral">{t('all_time_reports')}</div>
                             </div>
                         </div>
 
@@ -273,8 +273,8 @@ const CitizenProfile = () => {
                             <div className="g-stat-icon"><HourglassEmptyRoundedIcon fontSize="inherit" /></div>
                             <div className="g-stat-content">
                                 <div className="g-stat-value animate-number">{active}</div>
-                                <div className="g-stat-label">Active / Pending</div>
-                                <div className="g-stat-trend trend-neutral">Awaiting review</div>
+                                <div className="g-stat-label">{t('active_pending_label')}</div>
+                                <div className="g-stat-trend trend-neutral">{t('awaiting_review_label')}</div>
                             </div>
                         </div>
 
@@ -282,8 +282,8 @@ const CitizenProfile = () => {
                             <div className="g-stat-icon"><CheckCircleRoundedIcon fontSize="inherit" /></div>
                             <div className="g-stat-content">
                                 <div className="g-stat-value animate-number">{resolved}</div>
-                                <div className="g-stat-label">Resolved Issues</div>
-                                <div className="g-stat-trend trend-up">Community improvement</div>
+                                <div className="g-stat-label">{t('resolved_issues_impact')}</div>
+                                <div className="g-stat-trend trend-up">{t('community_improvement')}</div>
                             </div>
                         </div>
                     </div>
@@ -291,14 +291,14 @@ const CitizenProfile = () => {
 
                 {/* 4. PERFORMANCE METRICS (Visual Visuals) */}
                 <section style={{ marginBottom: '2rem' }}>
-                    <h3 style={{ marginBottom: '1rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <TrendingUpRoundedIcon style={{ color: 'var(--success-color)' }} /> Resolution Success
+                    <h3 style={{ marginBottom: '1rem', color: 'var(--text-primary)', display: 'center', alignItems: 'center', gap: '0.75rem' }}>
+                        <TrendingUpRoundedIcon style={{ color: 'var(--success-color)' }} /> {t('resolution_success_label')}
                     </h3>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem'}}>
                         
                         {/* Circular Progress */}
                         <div className="gamified-card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                            <h4 style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>Success Rate</h4>
+                            <h4 style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>{t('success_rate')}</h4>
                             <div style={{ position: 'relative', width: '120px', height: '120px' }}>
                                 <svg className="xp-ring-svg" viewBox="0 0 100 100">
                                     <circle className="xp-ring-bg" cx="50" cy="50" r="40" />
@@ -314,17 +314,17 @@ const CitizenProfile = () => {
                                 </div>
                             </div>
                             <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: 'var(--text-tertiary)' }}>
-                                {totalReported === 0 ? "Report an issue to improve" : "Issues successfully resolved"}
+                                {totalReported === 0 ? t('report_issue_improve') : t('issues_resolved_desc')}
                             </p>
                         </div>
 
                         {/* Avg Time Bars */}
                         <div className="gamified-card" style={{ padding: '2rem' }}>
-                            <h4 style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>Average Response Time</h4>
+                            <h4 style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>{t('avg_response_time_label')}</h4>
                             <div className="performance-bars">
                                 <div className="bar-row">
                                     <div className="bar-labels">
-                                        <span>Your Reports</span>
+                                        <span>{t('your_reports_label')}</span>
                                         <span style={{ color: 'var(--primary-color)' }}>{avgResponseTime || 0}h</span>
                                     </div>
                                     <div className="bar-track">
@@ -333,7 +333,7 @@ const CitizenProfile = () => {
                                 </div>
                                 <div className="bar-row">
                                     <div className="bar-labels">
-                                        <span>City Average</span>
+                                        <span>{t('city_average_label')}</span>
                                         <span>48h</span>
                                     </div>
                                     <div className="bar-track">
@@ -343,8 +343,8 @@ const CitizenProfile = () => {
                             </div>
                             <p style={{ marginTop: '1.5rem', fontSize: '0.875rem', color: 'var(--text-tertiary)' }}>
                                 {(!avgResponseTime || avgResponseTime === 0) 
-                                    ? "Wait for your first resolution" 
-                                    : avgResponseTime < 48 ? "Faster than city average!" : "Average processing time"}
+                                    ? t('wait_first_resolution') 
+                                    : avgResponseTime < 48 ? t('faster_than_average') : t('average_processing_time')}
                             </p>
                         </div>
 
@@ -354,15 +354,15 @@ const CitizenProfile = () => {
                 {/* 6. TIMELINE UI FOR RECENT ACTIVITY */}
                 <section style={{ paddingBottom: '3rem' }}>
                     <h3 style={{ marginBottom: '1rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <HistoryRoundedIcon color="info" /> Recent Activity
+                        <HistoryRoundedIcon color="info" /> {t('recent_activity')}
                     </h3>
                     
                     {!recentActivity || recentActivity.length === 0 ? (
                         <div className="gamified-empty-state gamified-card">
                             <div className="empty-state-emoji"><RocketLaunchRoundedIcon sx={{ fontSize: 60, color: 'var(--primary-color)' }} /></div>
-                            <h3>Start Your Journey</h3>
-                            <p>No activity yet. Report your first issue to see your timeline build out.</p>
-                            <button className="btn btn-primary" onClick={handleBack}>Go to Map</button>
+                            <h3>{t('start_your_journey')}</h3>
+                            <p>{t('no_activity_timeline_desc')}</p>
+                            <button className="btn btn-primary" onClick={handleBack}>{t('go_to_map')}</button>
                         </div>
                     ) : (
                         <div className="modern-timeline">
@@ -385,13 +385,15 @@ const CitizenProfile = () => {
                                         </div>
                                         <div className="timeline-content">
                                             <div>
-                                                <h4 className="event-title">{item.category} Issue #{item.id}</h4>
+                                                <h4 className="event-title">
+                                                    {t('cat_' + (item.category || 'uncategorized').toLowerCase())} {t('issue')} #{item.id}
+                                                </h4>
                                                 <div className="event-meta">
                                                     <span>{new Date(item.created_at).toLocaleDateString()}</span>
                                                 </div>
                                             </div>
                                             <span className={`badge ${st === 'resolved' || st === 'closed' ? 'badge-success' : 'badge-primary'}`}>
-                                                {item.status}
+                                                {t('status_' + st.replace(' ', ''))}
                                             </span>
                                         </div>
                                     </div>
@@ -408,25 +410,25 @@ const CitizenProfile = () => {
                             <path d="M12.22 2h-.44a2 2 0 0 0-2 2a2 2 0 0 1-2 2a2 2 0 0 1-2-2a2 2 0 0 0-2-2h-.44a2 2 0 0 0-2 2a2 2 0 0 0 2 2a2 2 0 0 1 2 2a2 2 0 0 1-2 2a2 2 0 0 0-2 2a2 2 0 0 0 2 2a2 2 0 0 1 2 2a2 2 0 0 1-2 2a2 2 0 0 0-2 2h.44a2 2 0 0 0 2-2a2 2 0 0 1 2-2a2 2 0 0 1 2 2a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2a2 2 0 0 1 2-2a2 2 0 0 1 2 2a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2a2 2 0 0 0-2-2a2 2 0 0 1-2-2a2 2 0 0 1 2-2a2 2 0 0 0 2-2a2 2 0 0 0-2-2a2 2 0 0 1-2-2a2 2 0 0 1 2-2a2 2 0 0 0 2-2h-.44a2 2 0 0 0-2 2a2 2 0 0 1-2 2a2 2 0 0 1-2-2a2 2 0 0 0-2-2z" />
                             <circle cx="12" cy="12" r="3" />
                         </svg>
-                        Profile Settings
+                        {t('profile_settings_title')}
                     </h3>
                     
                     <div className="gamified-card" style={{ padding: '2rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                             <div>
-                                <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>Preferred Language</h4>
-                                <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-tertiary)' }}>Choose your preferred language for the interface and AI reports.</p>
+                                <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>{t('preferred_language')}</h4>
+                                <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-tertiary)' }}>{t('choose_language_desc')}</p>
                             </div>
                             <div className="input-group" style={{ margin: 0, minWidth: '200px' }}>
                                 <select 
                                     className="input-field" 
                                     style={{ margin: 0 }}
-                                    value={localStorage.getItem('language') || 'en'}
+                                    value={i18n.language.split('-')[0]}
                                     onChange={(e) => handleLanguageUpdate(e.target.value)}
                                 >
-                                    <option value="en">English</option>
-                                    <option value="hi">हिन्दी (Hindi)</option>
-                                    <option value="te">తెలుగు (Telugu)</option>
+                                    <option value="en">{t('lang_en') || 'English'}</option>
+                                    <option value="hi">{t('lang_hi') || 'Hindi'}</option>
+                                    <option value="te">{t('lang_te') || 'Telugu'}</option>
                                 </select>
                             </div>
                         </div>

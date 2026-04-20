@@ -345,7 +345,24 @@ const resources = {
             "issue_record": "Issue Record",
             "assigned_to_you": "Assigned to you",
             "high_priority": "High Priority",
-            "match_label": "Match"
+            "match_label": "Match",
+            "activity_impact": "Activity Impact",
+            "reported_issues_label": "Reported Issues",
+            "all_time_reports": "All time reports",
+            "active_pending_label": "Active / Pending",
+            "awaiting_review_label": "Awaiting review",
+            "resolved_issues_impact": "Resolved Issues",
+            "community_improvement": "Community improvement",
+            "resolution_success_label": "Resolution Success",
+            "issues_resolved_desc": "Issues successfully resolved",
+            "avg_response_time_label": "Average Response Time",
+            "your_reports_label": "Your Reports",
+            "city_average_label": "City Average",
+            "wait_first_resolution": "Wait for first resolution",
+            "start_your_journey": "Start Your Journey",
+            "no_activity_timeline_desc": "No activity yet. Report your first issue to see your timeline build out.",
+            "profile_settings_title": "Profile Settings",
+            "choose_language_desc": "Choose your preferred language for the interface and AI reports."
         }
     },
     hi: {
@@ -690,7 +707,24 @@ const resources = {
             "issue_record": "मुद्दा रिकॉर्ड",
             "assigned_to_you": "आपको सौंपा गया",
             "high_priority": "उच्च प्राथमिकता",
-            "match_label": "मैच"
+            "match_label": "मैच",
+            "activity_impact": "गतिविधि प्रभाव",
+            "reported_issues_label": "रिपोर्ट किए गए मुद्दे",
+            "all_time_reports": "सभी समय की रिपोर्ट",
+            "active_pending_label": "सक्रिय / लंबित",
+            "awaiting_review_label": "समीक्ष के लिए प्रतीक्षा",
+            "resolved_issues_impact": "समाधानित मुद्दे",
+            "community_improvement": "सामुदायिक सुधार",
+            "resolution_success_label": "समाधान की सफलता",
+            "issues_resolved_desc": "मुद्दे सफलतापूर्वक हल किए गए",
+            "avg_response_time_label": "औसत प्रतिक्रिया समय",
+            "your_reports_label": "आपकी रिपोर्ट",
+            "city_average_label": "शहर का औसत",
+            "wait_first_resolution": "अपने पहले समाधान की प्रतीक्षा करें",
+            "start_your_journey": "अपनी यात्रा शुरू करें",
+            "no_activity_timeline_desc": "अभी तक कोई गतिविधि नहीं। अपनी समयरेखा बनते देखने के लिए अपनी पहली समस्या रिपोर्ट करें।",
+            "profile_settings_title": "प्रोफ़ाइल सेटिंग",
+            "choose_language_desc": "इंटरफ़ेस और एआई रिपोर्ट के लिए अपनी पसंदीदा भाषा चुनें।"
         }
     },
     te: {
@@ -1035,7 +1069,24 @@ const resources = {
             "issue_record": "సమస్య రికార్డు",
             "assigned_to_you": "మీకు కేటాయించబడింది",
             "high_priority": "అధిక ప్రాధాన్యత",
-            "match_label": "సరిపోలిక"
+            "match_label": "సరిపోలిక",
+            "activity_impact": "కార్యకలాప ప్రభావం",
+            "reported_issues_label": "నివేదించబడిన సమస్యలు",
+            "all_time_reports": "అన్ని కాలాల్లోని నివేదికలు",
+            "active_pending_label": "క్రియాశీల / పెండింగ్",
+            "awaiting_review_label": "సమీక్ష కోసం వేచి ఉంది",
+            "resolved_issues_impact": "పరిష్కరించబడిన సమస్యలు",
+            "community_improvement": "సంఘ అభివృద్ధి",
+            "resolution_success_label": "పరిష్కార విజయం",
+            "issues_resolved_desc": "సమస్యలు విజయవంతంగా పరిష్కరించబడ్డాయి",
+            "avg_response_time_label": "సగటు ప్రతిస్పందన సమయం",
+            "your_reports_label": "మీ నివేదికలు",
+            "city_average_label": "నగర సగటు",
+            "wait_first_resolution": "మీ మొదటి పరిష్కారం కోసం వేచి ఉండండి",
+            "start_your_journey": "మీ ప్రయాణాన్ని ప్రారంభించండి",
+            "no_activity_timeline_desc": "ఇంకా ఎలాంటి కార్యకలాపాలు లేవు. మీ టైమ్‌లైన్ నిర్మించబడటం చూడటానికి మీ మొదటి సమస్యను నివేదించండి.",
+            "profile_settings_title": "ప్రొఫైల్ సెట్టింగ్‌లు",
+            "choose_language_desc": "ఇంటర్‌ఫేస్ మరియు AI నివేదికల కోసం మీకు నచ్చిన భాషను ఎంచుకోండి."
         }
     }
 };

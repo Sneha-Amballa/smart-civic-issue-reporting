@@ -360,32 +360,73 @@
 .btn-submit-premium {
     width: 100%;
     max-width: 600px;
-    background: linear-gradient(135deg, var(--navy-primary) 0%, #3B82F6 100%);
+    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
     color: white;
-    border: none;
-    padding: 20px;
-    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 18px 32px;
+    border-radius: 12px;
     font-weight: 800;
-    font-size: 1.1rem;
+    font-size: 1rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
+    gap: 14px;
     cursor: pointer;
-    box-shadow: 0 10px 15px -3px rgba(30, 64, 175, 0.4);
-    transition: 0.3s;
+    box-shadow: 0 10px 25px -5px rgba(30, 58, 138, 0.3);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-submit-premium::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.1),
+        transparent
+    );
+    transition: 0.5s;
+}
+
+.btn-submit-premium:hover:not(:disabled)::before {
+    left: 100%;
 }
 
 .btn-submit-premium:hover:not(:disabled) {
-    transform: translateY(-4px);
-    box-shadow: 0 20px 25px -5px rgba(30, 64, 175, 0.5);
+    transform: translateY(-2px);
+    background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+    box-shadow: 0 15px 30px -5px rgba(30, 58, 138, 0.5), 0 0 0 4px rgba(59, 130, 246, 0.1);
+    letter-spacing: 0.08em;
+}
+
+.btn-submit-premium:active:not(:disabled) {
+    transform: translateY(1px);
+    box-shadow: 0 5px 10px -2px rgba(30, 58, 138, 0.4);
 }
 
 .btn-submit-premium:disabled {
-    opacity: 0.5;
+    opacity: 0.6;
     cursor: not-allowed;
-    background: #94A3B8;
+    background: #94a3b8;
     box-shadow: none;
+    border-color: #cbd5e1;
+}
+
+.btn-submit-premium svg {
+    font-size: 20px;
+    transition: transform 0.3s ease;
+}
+
+.btn-submit-premium:hover:not(:disabled) svg {
+    transform: translateX(4px) rotate(-10deg);
 }
 
 /* Analysis Animation Overlay Styles */

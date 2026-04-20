@@ -306,7 +306,7 @@ const ReportIssue = () => {
 
                         <div className="submit-box">
                             <button 
-                                className={`btn-primary-large ${(!capturedImage || !location || !description.trim() || isSubmitting) ? 'disabled' : ''}`} 
+                                className={`btn-submit-premium ${(!capturedImage || !location || !description.trim() || isSubmitting) ? 'disabled' : ''}`} 
                                 onClick={handleSubmit}
                                 disabled={!capturedImage || !location || !description.trim() || isSubmitting}
                             >
