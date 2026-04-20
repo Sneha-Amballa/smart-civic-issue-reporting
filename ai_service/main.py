@@ -149,36 +149,31 @@ ISSUE_CATEGORIES = [
     "drainage blockage"
 ]
 CIVIC_PROMPTS = [
-    "A real-world outdoor public road with potholes, cracks, or damaged asphalt",
-    "A real-world outdoor public area with garbage, litter, or overflowing waste",
-    "A real-world outdoor streetlight pole or public lighting infrastructure",
-    "A real-world outdoor public water leakage from pipelines or water flowing on roads",
-    "A real-world outdoor drainage issue such as clogged drains, sewage overflow, or open manholes"
-
+    "A real outdoor public road showing potholes, cracked asphalt, broken pavement, or damaged road surface",
+    "A real outdoor public place with garbage, litter, trash piles, or overflowing waste bins",
+    "A real outdoor streetlight pole or public lighting infrastructure on a road or street",
+    "A real outdoor public road with water leakage, pipeline break, or water flowing on the street",
+    "A real outdoor drainage problem such as clogged drains, sewage overflow, or open manhole on a street"
 ]
 
 TRAP_PROMPTS = [
-    "A screenshot of a computer screen showing civic issue reports or forms",
-    "A printed document or paper with text about civic issues",
-    "A photo taken indoors of a computer screen or mobile phone displaying civic content",
-    "A close-up photo of a person reporting a civic issue",
-    "A very blurry, dark, or corrupted image with no recognizable civic infrastructure",
-    "A cartoon, drawing, or artificial image of civic problems"
+    "A screenshot of a mobile phone or computer screen showing an app, website, or civic report",
+    "A printed paper or document with text about complaints or civic issues",
+    "An indoor photo showing a phone or monitor displaying an image or report",
+    "A very blurry, dark, noisy, or corrupted image with no clear objects",
+    "An indoor room with walls, ceiling, furniture, fan, or artificial lighting",
+    "A close-up of a human face or person"
 ]
 
 ISSUE_CATEGORIES = CIVIC_PROMPTS + TRAP_PROMPTS
 
 # Mapping descriptive prompts back to backend department names
 PROMPT_TO_DEPT = {
-    "A real-world outdoor public road with potholes, cracks, or damaged asphalt": "Roads",
-    "A real-world outdoor public area with garbage, litter, or overflowing waste": "Sanitation",
-    "A real-world outdoor streetlight pole or public lighting infrastructure": "Streetlight",
-    "A real-world outdoor public water leakage from pipelines or water flowing on roads": "Water",
-    "A real-world outdoor drainage issue such as clogged drains, sewage overflow, or open manholes": "Drainage",
-    "A private indoor room with ceiling fan, indoor lighting, furniture, or curtains": "Flagged",
-    "A close-up photo of a person or human face": "Flagged",
-    "A photo of paper, printed text, mobile screen, or digital display": "Flagged",
-    "A very blurry or dark image with no clear subject": "Flagged"
+    "A real outdoor public road showing potholes, cracked asphalt, broken pavement, or damaged road surface": "Roads",
+    "A real outdoor public place with garbage, litter, trash piles, or overflowing waste bins": "Sanitation",
+    "A real outdoor streetlight pole or public lighting infrastructure on a road or street": "Streetlight",
+    "A real outdoor public road with water leakage, pipeline break, or water flowing on the street": "Water",
+    "A real outdoor drainage problem such as clogged drains, sewage overflow, or open manhole on a street": "Drainage"
 }
 
 
@@ -364,33 +359,42 @@ def analyze_issue(request: IssueAnalysisRequest):
             }
             print(f"DEBUG: Short text detected, using low confidence")
 
-        # FUSION LOGIC AND FINAL DECISION
+        # FUSION LOGIC AND FINAL DECISION (Improved with Text Hinting)
         if image_result:
             trap_score = image_result["trap_score"]
             civic_score = image_result["civic_score"]
             predicted_category = PROMPT_TO_DEPT.get(image_result["civic_prompt"], "Other")
-
-            # Final Decision Logic (Improved)
-            # Step 1: Strong trap detection (high confidence invalid content)
-            if trap_score > 0.8:
-                category = "FLAGGED"
-            # Step 2: Civic classification (sufficient confidence)
-            elif civic_score > 0.7:
-                category = predicted_category
-            # Step 3: Uncertain cases
-            else:
-                category = "REVIEW_REQUIRED"
-
-            final_confidence = max(trap_score, civic_score)
-            scene = "Indoor/Unclear" if "indoor" in image_result["trap_prompt"].lower() or trap_score > civic_score else "Outdoor"
-            ai_status = "CATEGORIZED" if category not in ["FLAGGED", "REVIEW_REQUIRED"] else "FLAGGED"
             
-            if category == "REVIEW_REQUIRED":
-                 final_category = predicted_category # Preserve the guess but status is pending
-            else:
-                 final_category = category
+            final_category = predicted_category
+            final_confidence = civic_score
 
-            # Multi-line Reason Format
+            # USE TEXT CLASSIFICATION TO BOOST/OVERRIDE IF IMAGE IS UNCERTAIN
+            if text_result and text_result["confidence"] > 0.6 and civic_score < 0.7:
+                print(f"DEBUG: Boosting with text confidence: {text_result['confidence']} for category: {text_result['category']}")
+                final_category = text_result["category"]
+                # Boost confidence if they agree
+                if final_category.lower() == predicted_category.lower():
+                    final_confidence = max(civic_score, text_result["confidence"]) + 0.1
+                else:
+                    # If they disagree but text is strong, text wins for status
+                    final_confidence = text_result["confidence"]
+                
+                civic_score = final_confidence # For the threshold check below
+
+            # Final Decision Rules (Improved Version)
+            if trap_score > civic_score:
+                decision = "FLAGGED"
+            elif civic_score >= 0.40:
+                decision = final_category # Verified
+            elif 0.30 <= civic_score < 0.40:
+                decision = "REVIEW_REQUIRED" # Uncertain
+            else:
+                decision = "FLAGGED" # Too low signal
+
+            scene = "Indoor/Unclear" if trap_score > civic_score else "Outdoor"
+            ai_status = "CATEGORIZED" if decision == final_category else "FLAGGED"
+            
+            # Multi-line Reason
             reason_parts = [
                 f"Scene: {scene}",
                 f"Category: {final_category}",
@@ -399,18 +403,23 @@ def analyze_issue(request: IssueAnalysisRequest):
                 f"Reason:"
             ]
             
-            if trap_score > 0.5:
-                reason_parts.append(f"- FLAGGED: High confidence detection of invalid content ({round(trap_score, 2)})")
-                reason_parts.append(f"- This may be a screenshot, printed image, or photo taken indoors")
-            else:
-                reason_parts.append(f"- Scene detected: Civic ({round(civic_score, 2)}), Trap ({round(trap_score, 2)})")
-                
+            if trap_score > civic_score:
+                reason_parts.append(f"- FLAGGED: Trap Score ({round(trap_score, 2)}) is higher than Civic Score ({round(civic_score, 2)})")
+                reason_parts.append(f"- Match: {image_result['best_overall_prompt']}")
+            elif decision == "REVIEW_REQUIRED":
+                reason_parts.append(f"- Uncertain: Score ({round(civic_score, 2)}) in manual review range (0.30 - 0.40)")
+            elif text_result and text_result["confidence"] > 0.6:
+                reason_parts.append(f"- Verified: Strong agreement between visual and user description")
+            
             reason_parts.extend([
-                f"- Key objects: {image_result['best_overall_prompt']}",
-                f"- Final decision: {category}"
+                f"- Visual Match: {image_result['best_overall_prompt']}",
+                f"- Score: Civic ({round(civic_score, 2)}), Trap ({round(trap_score, 2)})",
+                f"- Final decision: {decision}"
             ])
             
             reason = "\n".join(reason_parts)
+            final_status = ai_status
+            final_category = final_category if decision != "FLAGGED" else "Flagged"
         elif text_result:
             # Text-only classification
             final_category = text_result["category"]

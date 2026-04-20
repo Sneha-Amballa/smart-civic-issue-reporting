@@ -120,14 +120,16 @@ exports.reportIssue = async (req, res) => {
         let issueStatus = 'Reported';
         let masterIssueId = null;
 
-        // HARD SAFETY NET: Explicitly block anything below 0.85 confidence
-        // RELAXED SAFETY NET: Lower threshold to 0.70 to avoid flagging too many valid reports
-        const isLowConfidence = aiResult.ai_confidence < 0.70;
+        // RELAXED SAFETY NET: Lower threshold to 0.45 to trust the improved AI fusion logic
+        const isLowConfidence = aiResult.ai_confidence < 0.45;
 
         if (aiResult.ai_status !== 'CATEGORIZED' || aiResult.category === 'Flagged' || isLowConfidence) {
             issueStatus = 'Flagged';
-            aiResult.category = 'Uncategorized'; // Force clean category to avoid false labels
-            console.log(`[BACKEND SAFETY] Issue Flagged. Confidence: ${aiResult.ai_confidence}. Threshold: 0.85`);
+            // Only set Uncategorized if it's truly low confidence or flagged
+            if (isLowConfidence || aiResult.category === 'Flagged') {
+                aiResult.category = 'Uncategorized'; 
+            }
+            console.log(`[BACKEND SAFETY] Issue Status: ${issueStatus}. Confidence: ${aiResult.ai_confidence}. Threshold: 0.45`);
         } else {
             // Only check for duplicates if it's a valid, Verified issue
             try {

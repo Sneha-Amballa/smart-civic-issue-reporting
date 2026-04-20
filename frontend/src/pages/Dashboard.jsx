@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import IssueMap from '../components/IssueMap';
 import '../styles/Dashboard.css';
 import Loading from '../components/Loading';
@@ -42,6 +42,8 @@ import {
 const Dashboard = () => {
     const navigate = useNavigate();
     const { t, i18n } = useTranslation();
+
+    const role = localStorage.getItem('role');
 
     const [issues, setIssues] = useState([]);
     const [allIssues, setAllIssues] = useState([]);
@@ -213,6 +215,9 @@ const Dashboard = () => {
     };
 
     if (loading) return <Loading message="Accessing Civic Dashboard" />;
+
+    if (role === 'officer') return <Navigate to="/officer/dashboard" replace />;
+    if (role === 'admin') return <Navigate to="/admin/dashboard" replace />;
 
 
     return (

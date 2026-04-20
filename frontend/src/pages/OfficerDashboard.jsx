@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
@@ -26,6 +26,9 @@ const OfficerDashboard = () => {
     const [resolutionImage, setResolutionImage] = useState(null);
     const [resolving, setResolving] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [isCameraActive, setIsCameraActive] = useState(false);
+    const videoRef = useRef(null);
+    const streamRef = useRef(null);
 
     const getLocalizedDescription = (issue) => {
         if (!issue.description) return issue.voice_text || 'No description';
@@ -76,6 +79,38 @@ const OfficerDashboard = () => {
         } else {
             updateStatus(id, newStatus);
         }
+    };
+
+    const startCamera = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+            streamRef.current = stream;
+            if (videoRef.current) videoRef.current.srcObject = stream;
+            setIsCameraActive(true);
+        } catch (err) {
+            console.error(err);
+            alert("Camera access denied");
+        }
+    };
+
+    const stopCamera = () => {
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+            streamRef.current = null;
+        }
+        setIsCameraActive(false);
+    };
+
+    const capturePhoto = () => {
+        const canvas = document.createElement('canvas');
+        const video = videoRef.current;
+        if (!video) return;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0);
+        setResolutionImage(canvas.toDataURL('image/jpeg'));
+        stopCamera();
     };
 
     const handleImageUpload = (e) => {
@@ -384,38 +419,78 @@ const OfficerDashboard = () => {
 
                             <div className="modal-field">
                                 <label style={{ display: 'block', fontWeight: '700', marginBottom: '0.75rem', color: '#1e293b' }}>
-                                    1. Upload Resolution Image (Required)
+                                    1. Provide Resolution Proof (Image)
                                 </label>
-                                <div 
-                                    style={{ 
-                                        border: '2px dashed #93c5fd', 
-                                        borderRadius: '12px', 
-                                        padding: '1.5rem', 
-                                        textAlign: 'center', 
-                                        background: '#eff6ff', 
-                                        cursor: 'pointer',
-                                        transition: 'all 0.2s ease'
-                                    }} 
-                                    onClick={() => document.getElementById('resolution-upload').click()}
-                                    onMouseOver={(e) => e.currentTarget.style.borderColor = '#3b82f6'}
-                                    onMouseOut={(e) => e.currentTarget.style.borderColor = '#93c5fd'}
-                                >
-                                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto 10px auto', display: 'block' }}>
-                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                                        <circle cx="8.5" cy="8.5" r="1.5" />
-                                        <polyline points="21 15 16 10 5 21" />
-                                    </svg>
-                                    <p style={{ color: '#1e3a8a', fontWeight: '600', margin: '0 0 0.25rem 0' }}>Click to Browse Image</p>
-                                    <p style={{ color: '#64748b', fontSize: '0.85rem', margin: '0' }}>JPG, PNG up to 5MB</p>
-                                    <input 
-                                        id="resolution-upload"
-                                        type="file" 
-                                        accept="image/*" 
-                                        onChange={handleImageUpload} 
-                                        style={{ display: 'none' }} 
-                                    />
-                                </div>
-                                {resolutionImage && <img src={resolutionImage} alt="Preview" className="image-preview" style={{ marginTop: '1rem', width: '100%', borderRadius: '12px', border: '1px solid #e2e8f0', objectFit: 'contain', maxHeight: '200px' }} />}
+                                
+                                {!resolutionImage && !isCameraActive && (
+                                    <div style={{ display: 'flex', gap: '1rem' }}>
+                                        <div 
+                                            style={{ 
+                                                flex: 1,
+                                                border: '2px dashed #93c5fd', 
+                                                borderRadius: '12px', 
+                                                padding: '1.5rem', 
+                                                textAlign: 'center', 
+                                                background: '#eff6ff', 
+                                                cursor: 'pointer'
+                                            }} 
+                                            onClick={() => document.getElementById('resolution-upload').click()}
+                                        >
+                                            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto 10px auto', display: 'block' }}>
+                                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                                <circle cx="8.5" cy="8.5" r="1.5" />
+                                                <polyline points="21 15 16 10 5 21" />
+                                            </svg>
+                                            <p style={{ color: '#1e3a8a', fontWeight: '600', fontSize: '0.9rem', margin: '0' }}>Upload File</p>
+                                        </div>
+
+                                        <div 
+                                            style={{ 
+                                                flex: 1,
+                                                border: '2px dashed #93c5fd', 
+                                                borderRadius: '12px', 
+                                                padding: '1.5rem', 
+                                                textAlign: 'center', 
+                                                background: '#eff6ff', 
+                                                cursor: 'pointer'
+                                            }} 
+                                            onClick={startCamera}
+                                        >
+                                            <PhotoCameraRoundedIcon style={{ fontSize: '30px', color: '#3b82f6', marginBottom: '10px' }} />
+                                            <p style={{ color: '#1e3a8a', fontWeight: '600', fontSize: '0.9rem', margin: '0' }}>Take Photo</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {isCameraActive && (
+                                    <div className="camera-view-container" style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden', background: '#000' }}>
+                                        <video ref={videoRef} autoPlay playsInline style={{ width: '100%', display: 'block' }} />
+                                        <div className="camera-controls" style={{ position: 'absolute', bottom: '20px', left: '0', right: '0', display: 'flex', justifyContent: 'center', gap: '1.5rem' }}>
+                                            <button className="btn-capture" onClick={capturePhoto} style={{ width: '60px', height: '60px', borderRadius: '50%', border: '4px solid white', background: 'rgba(255,255,255,0.3)', cursor: 'pointer' }}></button>
+                                            <button className="btn-cancel-cam" onClick={stopCamera} style={{ background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '20px', cursor: 'pointer' }}>Cancel</button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {resolutionImage && (
+                                    <div style={{ position: 'relative' }}>
+                                        <img src={resolutionImage} alt="Preview" className="image-preview" style={{ width: '100%', borderRadius: '12px', border: '1px solid #e2e8f0', objectFit: 'contain', maxHeight: '250px' }} />
+                                        <button 
+                                            onClick={() => setResolutionImage(null)} 
+                                            style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer' }}
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                )}
+
+                                <input 
+                                    id="resolution-upload"
+                                    type="file" 
+                                    accept="image/*" 
+                                    onChange={handleImageUpload} 
+                                    style={{ display: 'none' }} 
+                                />
                             </div>
 
                             <div className="modal-field">

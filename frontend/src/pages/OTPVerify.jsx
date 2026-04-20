@@ -93,6 +93,8 @@ const OTPVerify = () => {
             } else {
                 const { token, user } = response.data;
                 localStorage.setItem('token', token);
+                localStorage.setItem('role', user.role);
+
                 if (user.preferred_language) {
                     localStorage.setItem('language', user.preferred_language);
                     i18n.changeLanguage(user.preferred_language);

@@ -384,17 +384,24 @@ const getDepartmentIssues = async (req, res) => {
             }
         }
 
+        const currentDept = req.user.department;
+        console.log(`[Officer API] Fetching issues for Officer ${req.user.id} in Department: "${currentDept}"`);
+
         const issues = await sql`
             SELECT id, category, status, timestamp, voice_text, description, latitude, longitude, created_at, assigned_officer_id 
             FROM issues 
             WHERE 
-                (LOWER(category) = LOWER(${req.user.department}) AND status IN ('Assigned', 'In Progress', 'Resolved'))
+                (LOWER(category) = LOWER(${currentDept}) AND status IN ('Reported', 'Flagged', 'Assigned', 'In Progress', 'Resolved'))
             OR 
                 assigned_officer_id = ${req.user.id}
             ORDER BY 
                 CASE WHEN assigned_officer_id = ${req.user.id} THEN 0 ELSE 1 END,
                 created_at DESC
         `;
+
+        console.log(`[Officer API] Found ${issues.length} matching issues.`);
+
+        const userLang = req.user.language || 'en';
 
         const localizedIssues = await Promise.all(issues.map(async (issue) => {
             let translations = {};
@@ -420,7 +427,7 @@ const getDepartmentIssues = async (req, res) => {
                 ...issue,
                 description: translations, // Sending FULL OBJECT
                 voice_text: translations[userLang] || translations['en'] || issue.voice_text,
-                resolution_note: translations[userLang] || translations['en'] || issue.resolution_note
+                resolution_note: issue.resolution_note || ''
             };
         }));
 
@@ -445,7 +452,8 @@ const updateIssueStatus = async (req, res) => {
         const { status: currentStatus, citizen_id: citizenId } = currentIssue[0];
 
         const allowedTransitions = {
-            'Reported': ['Assigned', 'Rejected'],
+            'Reported': ['Assigned', 'In Progress', 'Rejected'],
+            'Flagged': ['Assigned', 'In Progress', 'Rejected'],
             'Assigned': ['In Progress', 'Rejected'],
             'In Progress': ['Resolved', 'Rejected'],
             'Resolved': [],
