@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import IssueMap from '../components/IssueMap';
 import '../styles/Dashboard.css';
+import Loading from '../components/Loading';
 import {
     CalendarTodayRounded as DateIcon,
     AddRounded as AddIcon,
@@ -36,6 +37,7 @@ import {
     FirstPage as FirstPageIcon,
     LastPage as LastPageIcon
 } from '@mui/icons-material';
+
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -210,7 +212,8 @@ const Dashboard = () => {
         return iconMap[status] || <ReportedIcon fontSize="small" />;
     };
 
-    if (loading && mainTab === 'overview') return <div className="loading-overlay"><div className="spinner"></div></div>;
+    if (loading) return <Loading message="Accessing Civic Dashboard" />;
+
 
     return (
         <div className="citizen-dashboard">
@@ -222,11 +225,11 @@ const Dashboard = () => {
                     </div>
                     <div className="gov-header-title-section">
                         <h1 className="gov-title">CivicFix Portal</h1>
-                        <p className="gov-subtitle">OFFICIAL CITIZEN REPORTING & MONITORING SYSTEM</p>
+                        <p className="gov-subtitle">{t('gov_subtitle')}</p>
                     </div>
                     <div className="gov-header-actions">
-                        <button className="btn-profile" onClick={() => navigate('/citizen/profile')}>MY PROFILE</button>
-                        <button className="btn-logout" onClick={handleLogout}>LOGOUT</button>
+                        <button className="btn-profile" onClick={() => navigate('/citizen/profile')}>{t('nav_my_profile_btn')}</button>
+                        <button className="btn-logout" onClick={handleLogout}>{t('nav_logout_btn')}</button>
                     </div>
                 </div>
             </header>
@@ -234,8 +237,8 @@ const Dashboard = () => {
             {/* 📑 RESTORED TABS NAVIGATION */}
             <div className="citizen-tabs">
                 <div className="tabs-container">
-                    <button className={`tab-btn ${mainTab === 'overview' ? 'active' : ''}`} onClick={() => setMainTab('overview')}>OVERVIEW</button>
-                    <button className={`tab-btn ${mainTab === 'tracker' ? 'active' : ''}`} onClick={() => setMainTab('tracker')}>ISSUE TRACKER</button>
+                    <button className={`tab-btn ${mainTab === 'overview' ? 'active' : ''}`} onClick={() => setMainTab('overview')}>{t('nav_overview_tab')}</button>
+                    <button className={`tab-btn ${mainTab === 'tracker' ? 'active' : ''}`} onClick={() => setMainTab('tracker')}>{t('nav_tracker_tab')}</button>
                 </div>
             </div>
 
@@ -247,23 +250,23 @@ const Dashboard = () => {
                         <div className="stats-grid">
                             <div className="stat-card stat-total">
                                 <div className="stat-val">{stats.total}</div>
-                                <div className="stat-lab">TOTAL ISSUES</div>
-                                <div className="stat-pill pill-grey">All time</div>
+                                <div className="stat-lab">{t('total_issues_reported') || 'TOTAL ISSUES'}</div>
+                                <div className="stat-pill pill-grey">{t('all_time')}</div>
                             </div>
                             <div className="stat-card stat-resolved">
                                 <div className="stat-val">{stats.resolved}</div>
-                                <div className="stat-lab">RESOLVED</div>
-                                <div className="stat-pill pill-green">{stats.total > 0 ? Math.round((stats.resolved / stats.total) * 100) : 0}% rate</div>
+                                <div className="stat-lab">{t('status_resolved')?.toUpperCase() || 'RESOLVED'}</div>
+                                <div className="stat-pill pill-green">{stats.total > 0 ? Math.round((stats.resolved / stats.total) * 100) : 0}% {t('rate_stat')}</div>
                             </div>
                             <div className="stat-card stat-progress">
                                 <div className="stat-val">{stats.inProgress}</div>
-                                <div className="stat-lab">IN PROGRESS</div>
-                                <div className="stat-pill pill-orange">{stats.total > 0 ? Math.round((stats.inProgress / stats.total) * 100) : 0}% of total</div>
+                                <div className="stat-lab">{t('status_inprogress')?.toUpperCase() || 'IN PROGRESS'}</div>
+                                <div className="stat-pill pill-orange">{stats.total > 0 ? Math.round((stats.inProgress / stats.total) * 100) : 0}% {t('of_total_stat')}</div>
                             </div>
                             <div className="stat-card stat-pending">
                                 <div className="stat-val">{stats.pending}</div>
-                                <div className="stat-lab">PENDING</div>
-                                <div className="stat-pill pill-grey">Unassigned</div>
+                                <div className="stat-lab">{t('status_pending')?.toUpperCase() || 'PENDING'}</div>
+                                <div className="stat-pill pill-grey">{t('unassigned')}</div>
                             </div>
                         </div>
 
@@ -271,7 +274,7 @@ const Dashboard = () => {
                         <div className="overview-panels">
                             {/* ISSUES BY CATEGORY */}
                             <div className="panel category-panel">
-                                <h3><div className="icon-circle">◎</div> ISSUES BY CATEGORY</h3>
+                                <h3><div className="icon-circle">◎</div> {t('issues_by_category')?.toUpperCase()}</h3>
                                 <div className="category-list">
                                     {Object.entries(categoryStats).map(([cat, count]) => {
                                         const percentage = stats.total > 0 ? (count / stats.total) * 100 : 0;
@@ -286,17 +289,17 @@ const Dashboard = () => {
                                                         <div className="progress-fill" style={{width: `${percentage}%`}}></div>
                                                     </div>
                                                 </div>
-                                                <div className="cat-count-col">{count} report{count !== 1 ? 's' : ''}</div>
+                                                <div className="cat-count-col">{count} {count !== 1 ? (t('issues') || 'reports') : (t('issue') || 'report')}</div>
                                             </div>
                                         );
                                     })}
-                                    {Object.keys(categoryStats).length === 0 && <div className="no-data">No reported categories</div>}
+                                    {Object.keys(categoryStats).length === 0 && <div className="no-data">{t('no_reported_categories')}</div>}
                                 </div>
                             </div>
 
                             {/* RECENT ACTIVITY */}
                             <div className="panel activity-panel">
-                                <h3><ListIcon style={{fontSize: 18, color: '#64748B'}} /> RECENT ACTIVITY</h3>
+                                <h3><ListIcon style={{fontSize: 18, color: '#64748B'}} /> {t('recent_activity')?.toUpperCase() || 'RECENT ACTIVITY'}</h3>
                                 <div className="activity-list">
                                     {issues.slice(0, 4).map(issue => (
                                         <div key={issue.id} className="activity-item">
@@ -304,11 +307,15 @@ const Dashboard = () => {
                                             <div className="activity-dot-main"></div>
                                             <div className="activity-content">
                                                 <div className="activity-title">
-                                                    {issue.category} — {issue.description?.en || issue.voice_text || 'Reported Issue'}
+                                                    {t('cat_' + issue.category?.toLowerCase().replace(' ', '_'), { defaultValue: issue.category })} — {(() => {
+                                                        const descObject = typeof issue.description === 'object' ? issue.description : {};
+                                                        const langCode = i18n.language?.split('-')[0] || 'en';
+                                                        return descObject[langCode] || descObject['en'] || issue.voice_text || t('no_description_provided');
+                                                    })()}
                                                 </div>
                                                 <div className="activity-meta">
                                                     <span className={`status-pill status-${issue.status?.toLowerCase().replace(' ', '-')}`}>
-                                                        {issue.status}
+                                                        {t('status_' + issue.status?.toLowerCase().replace(' ', '_'), { defaultValue: issue.status })}
                                                     </span>
                                                     <span className="time-ago">
                                                         {new Date(issue.timestamp || issue.created_at).toLocaleDateString()}
@@ -317,7 +324,7 @@ const Dashboard = () => {
                                             </div>
                                         </div>
                                     ))}
-                                    {issues.length === 0 && <div className="no-data">No recent activity</div>}
+                                    {issues.length === 0 && <div className="no-data">{t('no_recent_activity') || 'No recent activity'}</div>}
                                 </div>
                             </div>
                         </div>
@@ -331,18 +338,18 @@ const Dashboard = () => {
                         <div className="tracker-toolbar-v4">
                             <div className="toolbar-left-v4">
                                 <div className="pill-toggle">
-                                    <button className={tab === 'my' ? 'active' : ''} onClick={() => { setTab('my'); setCurrentPage(1); }}>MY ISSUES</button>
-                                    <button className={tab === 'all' ? 'active' : ''} onClick={() => { setTab('all'); setCurrentPage(1); }}>ALL ISSUES</button>
+                                    <button className={tab === 'my' ? 'active' : ''} onClick={() => { setTab('my'); setCurrentPage(1); }}>{t('my_issues_tab')?.toUpperCase() || 'MY ISSUES'}</button>
+                                    <button className={tab === 'all' ? 'active' : ''} onClick={() => { setTab('all'); setCurrentPage(1); }}>{t('all_issues_tab')?.toUpperCase() || 'ALL ISSUES'}</button>
                                 </div>
                                 <div className="pill-toggle">
-                                    <button className={viewMode === 'list' ? 'active' : ''} onClick={() => setViewMode('list')}><ListIcon style={{ fontSize: 18 }} /></button>
-                                    <button className={viewMode === 'map' ? 'active' : ''} onClick={() => setViewMode('map')}><MapIcon style={{ fontSize: 18 }} /></button>
+                                    <button className={viewMode === 'list' ? 'active' : ''} onClick={() => setViewMode('list')}><ListIcon style={{ fontSize: 18 }} /> {t('list_view')?.toUpperCase() || 'LIST'}</button>
+                                    <button className={viewMode === 'map' ? 'active' : ''} onClick={() => setViewMode('map')}><MapIcon style={{ fontSize: 18 }} /> {t('map_view')?.toUpperCase() || 'MAP'}</button>
                                 </div>
                             </div>
                             
                             <div className="toolbar-right-v4">
                                 <button className="btn-report-v4" onClick={() => navigate('/report-issue')}>
-                                    <AddIcon /> REPORT NEW ISSUE
+                                    <AddIcon /> {t('report_issue_title')?.toUpperCase() || 'REPORT NEW ISSUE'}
                                 </button>
                             </div>
                         </div>
@@ -354,7 +361,7 @@ const Dashboard = () => {
                                     <SearchIcon className="search-icon" />
                                     <input
                                         type="text"
-                                        placeholder="Search issues by description, category, or location..."
+                                        placeholder={t('search_issues_placeholder')}
                                         value={searchText}
                                         onChange={(e) => { setSearchText(e.target.value); setCurrentPage(1); }}
                                         className="search-input"
@@ -362,36 +369,36 @@ const Dashboard = () => {
                                 </div>
 
                                 <div className="filter-group">
-                                    <span className="filter-label">Status</span>
+                                    <span className="filter-label">{t('status_label') || 'Status'}</span>
                                     <select
                                         value={selectedStatus}
                                         onChange={(e) => { setSelectedStatus(e.target.value); setCurrentPage(1); }}
                                         className="filter-select"
                                     >
-                                        <option value="">All Statuses</option>
-                                        <option value="Reported">Reported</option>
-                                        <option value="Assigned">Assigned</option>
-                                        <option value="In Progress">In Progress</option>
-                                        <option value="Resolved">Resolved</option>
+                                        <option value="">{t('all_statuses') || 'All Statuses'}</option>
+                                        <option value="Reported">{t('status_reported')}</option>
+                                        <option value="Assigned">{t('status_assigned')}</option>
+                                        <option value="In Progress">{t('status_inprogress')}</option>
+                                        <option value="Resolved">{t('status_resolved')}</option>
                                     </select>
                                 </div>
 
                                 <div className="filter-group">
-                                    <span className="filter-label">Category</span>
+                                    <span className="filter-label">{t('category_label') || 'Category'}</span>
                                     <select
                                         value={selectedCategory}
                                         onChange={(e) => { setSelectedCategory(e.target.value); setCurrentPage(1); }}
                                         className="filter-select"
                                     >
-                                        <option value="">All Categories</option>
-                                        <option value="Roads">Roads</option>
-                                        <option value="Water">Water</option>
-                                        <option value="Sanitation">Sanitation</option>
-                                        <option value="Streetlight">Streetlight</option>
-                                        <option value="Drainage">Drainage</option>
-                                        <option value="Parks">Parks</option>
-                                        <option value="Waste">Waste</option>
-                                        <option value="Other">Other</option>
+                                        <option value="">{t('all_categories') || 'All Categories'}</option>
+                                        <option value="Roads">{t('cat_roads')}</option>
+                                        <option value="Water">{t('cat_water')}</option>
+                                        <option value="Sanitation">{t('cat_sanitation')}</option>
+                                        <option value="Streetlight">{t('cat_lighting')}</option>
+                                        <option value="Drainage">{t('cat_drainage')}</option>
+                                        <option value="Parks">{t('cat_parks')}</option>
+                                        <option value="Waste">{t('cat_waste')}</option>
+                                        <option value="Other">{t('cat_other')}</option>
                                     </select>
                                 </div>
 
@@ -417,14 +424,14 @@ const Dashboard = () => {
                                 </div>
 
                                 <button onClick={resetFilters} className="filter-clear-btn">
-                                    Clear filters
+                                    {t('reset_filters') || 'Clear filters'}
                                 </button>
                             </div>
 
                             <div className="results-info">
-                                Showing {paginatedIssues.length} of {filteredAndSortedIssues.length} issues
+                                {t('showing_results', { count: paginatedIssues.length, total: filteredAndSortedIssues.length }) || `Showing ${paginatedIssues.length} of ${filteredAndSortedIssues.length} issues`}
                                 {(searchText || selectedStatus || selectedCategory) && (
-                                    <span className="filter-active"> filtered</span>
+                                    <span className="filter-active"> {t('filtered') || 'filtered'}</span>
                                 )}
                             </div>
                         </div>
@@ -442,12 +449,18 @@ const Dashboard = () => {
                                                     <span className="category-icon-small">
                                                         {getCategoryIcon(issue.category)}
                                                     </span>
-                                                    <span className="badge-category">{issue.category?.toUpperCase()}</span>
+                                                    <span className="badge-category">
+                                                        {t('cat_' + issue.category?.toLowerCase().replace(' ', '_'), { defaultValue: issue.category })?.toUpperCase()}
+                                                    </span>
                                                 </div>
                                                 <span className="issue-id">#{issue.id}</span>
                                             </div>
                                             <h3 className="card-title">
-                                                {issue.description?.en || issue.voice_text || 'Issue Record'}
+                                                {(() => {
+                                                    const descObject = typeof issue.description === 'object' ? issue.description : {};
+                                                    const langCode = i18n.language?.split('-')[0] || 'en';
+                                                    return descObject[langCode] || descObject['en'] || issue.voice_text || t('issue_record') || 'Issue Record';
+                                                })()}
                                             </h3>
                                             <div className="card-meta">
                                                 <div className="meta-row">
@@ -460,13 +473,13 @@ const Dashboard = () => {
                                                 </div>
                                             </div>
                                             <div className="card-status-strip">
-                                                <span className="ai-tag"><AIIcon style={{ fontSize: 12 }} /> VERIFIED</span>
+                                                <span className="ai-tag"><AIIcon style={{ fontSize: 12 }} /> {t('ai_verified_label') || 'VERIFIED'}</span>
                                                 <div className="status-with-icon">
                                                     <span className="status-icon-small">
                                                         {getStatusIcon(issue.status)}
                                                     </span>
                                                     <span className={`status-tag status-${issue.status?.toLowerCase().replace(' ', '-')}`}>
-                                                        {issue.status?.toUpperCase()}
+                                                        {t('status_' + issue.status?.toLowerCase().replace(' ', '_'), { defaultValue: issue.status })?.toUpperCase()}
                                                     </span>
                                                 </div>
                                             </div>
@@ -493,7 +506,7 @@ const Dashboard = () => {
                                         </button>
 
                                         <span className="pagination-info">
-                                            Page {currentPage} of {totalPages}
+                                            {t('page_info', { current: currentPage, total: totalPages }) || `Page ${currentPage} of ${totalPages}`}
                                         </span>
 
                                         <button

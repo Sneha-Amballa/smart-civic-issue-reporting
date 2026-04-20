@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -14,6 +15,7 @@ import {
 import { Bar, Pie } from 'react-chartjs-2';
 import IssueMap from '../components/IssueMap';
 import '../styles/AdminDashboard.css';
+import Loading from '../components/Loading';
 import {
     Search as SearchIcon,
     FilterList as FilterIcon,
@@ -52,6 +54,7 @@ ChartJS.register(
   ArcElement
 );
 
+
 const getLocalizedDescription = (issue) => {
     if (!issue) return 'No description provided';
     if (!issue.description && !issue.voice_text) return 'No description provided';
@@ -64,6 +67,7 @@ const getLocalizedDescription = (issue) => {
 };
 
 const AdminDashboard = () => {
+    const { t } = useTranslation();
     const [officers, setOfficers] = useState([]);
     const [issues, setIssues] = useState([]);
     const [stats, setStats] = useState({
@@ -202,14 +206,8 @@ const AdminDashboard = () => {
         ],
     };
 
-    if (loading) {
-        return (
-            <div className="loading-overlay">
-                <div className="spinner"></div>
-                <p style={{ marginTop: '1.5rem', color: '#616161', fontSize: '1rem' }}>Loading Dashboard...</p>
-            </div>
-        );
-    }
+    if (loading) return <Loading message="Synchronizing Administration Portal" />;
+
 
     return (
         <div className="admin-dashboard">
@@ -225,8 +223,8 @@ const AdminDashboard = () => {
                     </div>
                     
                     <div className="gov-header-title-section">
-                        <h1 className="gov-title">CivicFix Administration Portal</h1>
-                        <p className="gov-subtitle">Government of India | Ministry of Urban Development</p>
+                        <h1 className="gov-title">{t('admin_portal')}</h1>
+                        <p className="gov-subtitle">{t('gov_subtitle')}</p>
                     </div>
                     
                     <div className="gov-header-actions">
@@ -236,7 +234,7 @@ const AdminDashboard = () => {
                                 <polyline points="16 17 21 12 16 7" />
                                 <line x1="21" y1="12" x2="9" y2="12" />
                             </svg>
-                            Logout
+                            {t('logout')}
                         </button>
                     </div>
                 </div>
@@ -244,11 +242,11 @@ const AdminDashboard = () => {
 
             <div className="admin-tabs">
                 <div className="tabs-container">
-                    <button className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>Overview</button>
-                    <button className={`tab-btn ${activeTab === 'issues' ? 'active' : ''}`} onClick={() => setActiveTab('issues')}>Issues Management</button>
-                    <button className={`tab-btn ${activeTab === 'map' ? 'active' : ''}`} onClick={() => setActiveTab('map')}>System Map</button>
-                    <button className={`tab-btn ${activeTab === 'officers' ? 'active' : ''}`} onClick={() => setActiveTab('officers')}>Officers List</button>
-                    <button className={`tab-btn ${activeTab === 'analytics' ? 'active' : ''}`} onClick={() => setActiveTab('analytics')}>Analytics</button>
+                    <button className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>{t('nav_overview_tab')}</button>
+                    <button className={`tab-btn ${activeTab === 'issues' ? 'active' : ''}`} onClick={() => setActiveTab('issues')}>{t('nav_issue_tracker')}</button>
+                    <button className={`tab-btn ${activeTab === 'map' ? 'active' : ''}`} onClick={() => setActiveTab('map')}>{t('system_map')}</button>
+                    <button className={`tab-btn ${activeTab === 'officers' ? 'active' : ''}`} onClick={() => setActiveTab('officers')}>{t('officers_list') || 'Officers List'}</button>
+                    <button className={`tab-btn ${activeTab === 'analytics' ? 'active' : ''}`} onClick={() => setActiveTab('analytics')}>{t('analytics') || 'Analytics'}</button>
                 </div>
             </div>
 
@@ -272,7 +270,7 @@ const AdminDashboard = () => {
                             </div>
                             <div className="stat-content">
                                 <div className="stat-value">{stats.activeOfficers}</div>
-                                <div className="stat-label">Active Officers</div>
+                                <div className="stat-label">{t('active_officers')}</div>
                                 <div className="stat-meta">of {stats.totalOfficers} total</div>
                             </div>
                         </article>
@@ -302,8 +300,8 @@ const AdminDashboard = () => {
                             </div>
                             <div className="stat-content">
                                 <div className="stat-value">{stats.totalIssues}</div>
-                                <div className="stat-label">Total Issues</div>
-                                <div className="stat-meta">in system</div>
+                                <div className="stat-label">{t('available_tasks')}</div>
+                                <div className="stat-meta">Pending Review</div>
                             </div>
                         </article>
 
@@ -317,8 +315,8 @@ const AdminDashboard = () => {
                             </div>
                             <div className="stat-content">
                                 <div className="stat-value">{stats.escalatedIssues}</div>
-                                <div className="stat-label">Escalated Cases</div>
-                                <div className="stat-meta">require attention</div>
+                                <div className="stat-label">{t('escalated_high')}</div>
+                                <div className="stat-meta">Requires Attention</div>
                             </div>
                         </article>
 
@@ -331,8 +329,8 @@ const AdminDashboard = () => {
                             </div>
                             <div className="stat-content">
                                 <div className="stat-value">{stats.resolvedToday}</div>
-                                <div className="stat-label">Resolved Today</div>
-                                <div className="stat-meta">last 24 hours</div>
+                                <div className="stat-label">{t('resolved_today')}</div>
+                                <div className="stat-meta">Today</div>
                             </div>
                         </article>
                     </div>

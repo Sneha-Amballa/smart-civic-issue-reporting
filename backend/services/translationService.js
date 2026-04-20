@@ -2,7 +2,7 @@ const axios = require('axios');
 
 const AI_BASE = process.env.AI_SERVICE_URL || 'http://127.0.0.1:8000';
 
-async function translateToEnglishAndDetect(text) {
+async function translateToTarget(text, targetLang = 'en') {
     if (!text) {
         return {
             translatedText: '',
@@ -14,7 +14,7 @@ async function translateToEnglishAndDetect(text) {
     try {
         const response = await axios.post(
             `${AI_BASE}/translate`,
-            { text },
+            { text, target_lang: targetLang },
             { timeout: 15000 }
         );
 
@@ -24,7 +24,7 @@ async function translateToEnglishAndDetect(text) {
             wasTranslated: Boolean(response.data.was_translated)
         };
     } catch (error) {
-        console.error('Translation Service Error:', error.response?.data || error.message);
+        console.error(`Translation Service Error (${targetLang}):`, error.response?.data || error.message);
         return {
             translatedText: text,
             detectedLanguage: 'unknown',
@@ -38,16 +38,8 @@ async function translateToEnglishAndDetect(text) {
  * Hindi/Telugu are preserved as source text when local translation only targets English.
  */
 async function translateText(text) {
-    if (!text) return { en: '', hi: '', te: '' };
-
-    const result = await translateToEnglishAndDetect(text);
-    const english = result.translatedText || text;
-
-    return {
-        en: english,
-        hi: text,
-        te: text
-    };
+    const result = await translateAndDetect(text);
+    return result.translations;
 }
 
 async function translateAndDetect(text) {
@@ -58,18 +50,31 @@ async function translateAndDetect(text) {
         };
     }
 
-    const result = await translateToEnglishAndDetect(text);
-    const english = result.translatedText || text;
-    const detectedLanguage = result.detectedLanguage === 'unknown' ? 'en' : result.detectedLanguage;
+    // Run translations in parallel for speed
+    try {
+        const [enRes, hiRes, teRes] = await Promise.all([
+            translateToTarget(text, 'en'),
+            translateToTarget(text, 'hi'),
+            translateToTarget(text, 'te')
+        ]);
 
-    return {
-        translations: {
-            en: english,
-            hi: text,
-            te: text
-        },
-        detectedLanguage
-    };
+        const detectedLanguage = enRes.detectedLanguage === 'unknown' ? 'en' : enRes.detectedLanguage;
+
+        return {
+            translations: {
+                en: enRes.translatedText,
+                hi: hiRes.translatedText,
+                te: teRes.translatedText
+            },
+            detectedLanguage
+        };
+    } catch (err) {
+        console.error("Parallel translation failed:", err.message);
+        return {
+            translations: { en: text, hi: text, te: text },
+            detectedLanguage: 'en'
+        };
+    }
 }
 
 module.exports = { translateText, translateAndDetect };

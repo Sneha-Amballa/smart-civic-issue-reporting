@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer, util
-from transformers import CLIPProcessor, CLIPModel, MarianMTModel, MarianTokenizer
+from transformers import CLIPProcessor, CLIPModel, M2M100ForConditionalGeneration, M2M100Tokenizer
 from PIL import Image
 from typing import List
 import uvicorn
@@ -41,11 +41,12 @@ async def lifespan(app: FastAPI):
         clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
         print("CLIP Loaded.")
 
-        print("Loading translation model...")
-        TRANSLATION_MODEL = "Helsinki-NLP/opus-mt-mul-en"
-        translate_tokenizer = MarianTokenizer.from_pretrained(TRANSLATION_MODEL)
-        translate_model = MarianMTModel.from_pretrained(TRANSLATION_MODEL)
-        print("Translation model loaded.")
+        print("Loading M2M100 translation model (facebook/m2m100_418M)...")
+        # Use M2M100 which supports 100+ languages including Hindi and Telugu
+        model_name = "facebook/m2m100_418M"
+        translate_tokenizer = M2M100Tokenizer.from_pretrained(model_name)
+        translate_model = M2M100ForConditionalGeneration.from_pretrained(model_name)
+        print("M2M100 Translation model loaded.")
     except Exception as e:
         print(f"Failed to load models during startup: {e}")
     
@@ -330,6 +331,7 @@ class DuplicateCheckRequest(BaseModel):
 
 class TranslationRequest(BaseModel):
     text: str
+    target_lang: str = "en"
 
 
 # ===============================
@@ -627,31 +629,45 @@ def check_duplicate(request: DuplicateCheckRequest):
 @app.post("/translate")
 def translate(request: TranslationRequest):
     try:
+        if not request.text or len(request.text.strip()) == 0:
+            return {"translated_text": "", "was_translated": False}
+
         detected = detect_lang(request.text)
-        if detected == "en":
+        
+        # If already in target language, return as is
+        if detected == request.target_lang:
             return {
                 "translated_text": request.text,
-                "detected_language": "en",
+                "detected_language": detected,
                 "was_translated": False
             }
 
-        tokens = translate_tokenizer(
-            [request.text],
-            return_tensors="pt",
-            padding=True,
-            truncation=True,
-            max_length=512
+        # Force language codes to M2M100 format if necessary
+        # M2M100 uses standard ISO codes
+        src_lang = detected
+        tgt_lang = request.target_lang
+        
+        # Set source language
+        translate_tokenizer.src_lang = src_lang
+        
+        encoded_text = translate_tokenizer(request.text, return_tensors="pt")
+        
+        # Generate translation
+        generated_tokens = translate_model.generate(
+            **encoded_text, 
+            forced_bos_token_id=translate_tokenizer.get_lang_id(tgt_lang)
         )
-        with torch.no_grad():
-            translated = translate_model.generate(**tokens)
-        result = translate_tokenizer.decode(translated[0], skip_special_tokens=True)
+        
+        result = translate_tokenizer.batch_decode(generated_tokens, skip_special_tokens=True)[0]
 
         return {
             "translated_text": result,
             "detected_language": detected,
+            "target_language": tgt_lang,
             "was_translated": True
         }
     except Exception as e:
+        print(f"Translation Error: {e}")
         return {
             "translated_text": request.text,
             "detected_language": "unknown",

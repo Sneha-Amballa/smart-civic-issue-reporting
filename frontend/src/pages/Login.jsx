@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-// import { useTranslation } from 'react-i18next'; // Comment out if not needed
+import { useTranslation } from 'react-i18next';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
+import i18n from '../i18n';
 import '../styles/AuthStyles.css';
 
 const ADMIN_EMAIL = "sneha.amballa0804@gmail.com";
 
 const Login = () => {
-    // const { t } = useTranslation(); // Comment out if not used
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
     const [email, setEmail] = useState('');
@@ -43,6 +44,7 @@ const Login = () => {
                 localStorage.setItem('token', token);
                 if (user.preferred_language) {
                     localStorage.setItem('language', user.preferred_language);
+                    i18n.changeLanguage(user.preferred_language);
                 }
                 navigate('/admin/dashboard');
             } else {
@@ -69,15 +71,15 @@ const Login = () => {
                             </svg>
                             <h2>CIVICFIX</h2>
                         </div>
-                        <p>Streamlining urban governance with AI-powered reporting and transparent civic management.</p>
-                        <Link to="/" className="branding-btn">Back to Home</Link>
+                        <p>{t('branding_desc')}</p>
+                        <Link to="/" className="branding-btn">{t('back_to_home')}</Link>
                     </div>
                 </div>
                 
                 <div className="auth-form-wrapper">
                     <div className="auth-header">
-                        <h2>{isAdmin ? 'Admin Access' : 'Log in'}</h2>
-                        <p>{isAdmin ? 'Secure admin portal' : 'Welcome back! Please enter your details.'}</p>
+                        <h2>{isAdmin ? t('admin_access') : t('login_title')}</h2>
+                        <p>{isAdmin ? t('secure_portal') : t('auth_subtitle_login')}</p>
                     </div>
                 
                 <div className="auth-body">
@@ -101,15 +103,14 @@ const Login = () => {
 
                     <form onSubmit={handleSubmit}>
                         <div className="input-group">
-                            <label>Email Address</label>
+                            <label>{t('email')}</label>
                             <input
                                 type="email"
                                 className="input-field"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                placeholder="Enter your email"
+                                placeholder="name@example.com"
                                 required
-                                autoComplete="email"
                             />
                             {isAdmin && (
                                 <span className="badge badge-primary" style={{ position: 'absolute', right: '1rem', top: '2.5rem' }}>
@@ -120,43 +121,34 @@ const Login = () => {
 
                         {isAdmin && (
                             <div className="input-group">
-                                <label>Admin Secret Code</label>
+                                <label>{t('password')}</label>
                                 <input
                                     type="password"
                                     className="input-field"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="Enter admin secret"
+                                    placeholder="••••••••"
                                     required
-                                    autoComplete="current-password"
                                 />
                             </div>
                         )}
 
                         <button 
                             type="submit" 
-                            className="btn btn-primary" 
-                            style={{ width: '100%' }} 
+                            className="btn btn-primary btn-block" 
                             disabled={loading}
                         >
-                            {loading ? (
-                                <>
-                                    <span className="loader"></span>
-                                    Processing...
-                                </>
-                            ) : (
-                                isAdmin ? 'Access Admin Panel' : 'Continue with Email'
-                            )}
+                            {loading ? t('loading') : (isAdmin ? t('cta_login') : t('cta_login'))}
                         </button>
                     </form>
 
                     {!isAdmin && (
                         <>
-                            <div className="divider">New to our platform?</div>
+                            <div className="divider">{t('new_to_platform')}</div>
                             
                             <div className="footer-links">
                                 <Link to="/signup" className="btn btn-outline" style={{ textDecoration: 'none' }}>
-                                    Create an Account
+                                    {t('cta_signup')}
                                 </Link>
                             </div>
                         </>
@@ -169,7 +161,7 @@ const Login = () => {
                                 className="link"
                                 style={{ fontSize: '0.875rem' }}
                             >
-                                ← Back to user login
+                                ← {t('back_to_user_login')}
                             </button>
                         </div>
                     )}

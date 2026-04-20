@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import '../styles/CitizenProfile.css';
 import '../styles/GamifiedProfile.css';
 
@@ -20,9 +21,12 @@ import AssignmentRoundedIcon from '@mui/icons-material/AssignmentRounded';
 import BarChartRoundedIcon from '@mui/icons-material/BarChartRounded';
 import TrendingUpRoundedIcon from '@mui/icons-material/TrendingUpRounded';
 import HistoryRoundedIcon from '@mui/icons-material/HistoryRounded';
+import Loading from '../components/Loading';
 
 const CitizenProfile = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
+
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -62,23 +66,37 @@ const CitizenProfile = () => {
         navigate('/dashboard');
     };
 
-    if (loading) {
-        return (
-            <div className="loading-overlay">
-                <div className="spinner"></div>
-                <p style={{ marginTop: '1.5rem', color: '#616161', fontSize: '1rem' }}>Loading Profile...</p>
-            </div>
-        );
-    }
+    const handleLanguageUpdate = async (newLang) => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.post(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/auth/update-language`, 
+                { language: newLang },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            
+            // Update local storage
+            localStorage.setItem('token', response.data.token);
+            localStorage.setItem('language', newLang);
+            
+            // Update localized UI
+            window.location.reload(); 
+        } catch (err) {
+            console.error('Error updating language:', err);
+            alert('Failed to update language preference.');
+        }
+    };
+
+    if (loading) return <Loading message={t('sync_impact_profile')} />;
+
 
     if (error) {
         return (
             <div className="gamified-dashboard">
                 <div className="gamified-empty-state">
                     <div className="empty-state-emoji"><WarningAmberRoundedIcon sx={{ fontSize: 60, color: 'var(--error-color)' }} /></div>
-                    <h3>Error Loading Profile</h3>
+                    <h3>{t('err_loading_profile')}</h3>
                     <p>{error}</p>
-                    <button className="btn btn-primary" onClick={() => window.location.reload()}>Retry Connection</button>
+                    <button className="btn btn-primary" onClick={() => window.location.reload()}>{t('retry_connection')}</button>
                 </div>
             </div>
         );
@@ -95,24 +113,24 @@ const CitizenProfile = () => {
     // Gamification Logic
     const xp = contributionScore || (resolved * 20 + active * 5); // Fallback XP calc
     const isCivicHero = xp >= 100;
-    const levelName = isCivicHero ? "Civic Hero" : "Starter Citizen";
+    const levelName = isCivicHero ? t('hero_civic_hero') : t('hero_starter');
     const xpTarget = isCivicHero ? xp : 100;
     const ringPercent = Math.min((xp / xpTarget) * 100, 100);
 
     // Badges array logic
     const badges = [
-        { shortName: "Report", name: "First Report", desc: "Report your first civic issue.", req: 1, current: totalReported, icon: <CameraAltRoundedIcon fontSize="inherit" />, colorClass: "c-blue" },
-        { shortName: "Eye", name: "Sharp Eye", desc: "Report 5 different issues.", req: 5, current: totalReported, icon: <SearchRoundedIcon fontSize="inherit" />, colorClass: "c-orange" },
-        { shortName: "Fixer", name: "City Fixer", desc: "Have 3 reports successfully fixed.", req: 3, current: resolved, icon: <BuildRoundedIcon fontSize="inherit" />, colorClass: "c-green" },
-        { shortName: "Leader", name: "Community Leader", desc: "Have 10 reports successfully fixed.", req: 10, current: resolved, icon: <EmojiEventsRoundedIcon fontSize="inherit" />, colorClass: "c-purple" },
-        { shortName: "Pro", name: "Perfectionist", desc: "Maintain a 100% resolution success rate.", req: 100, current: successRate, isPercent: true, icon: <TrackChangesRoundedIcon fontSize="inherit" />, colorClass: "c-red" }
+        { shortName: "Report", name: t('badge_first_report'), desc: t('badge_first_report_desc'), req: 1, current: totalReported, icon: <CameraAltRoundedIcon fontSize="inherit" />, colorClass: "c-blue" },
+        { shortName: "Eye", name: t('badge_sharp_eye'), desc: t('badge_sharp_eye_desc'), req: 5, current: totalReported, icon: <SearchRoundedIcon fontSize="inherit" />, colorClass: "c-orange" },
+        { shortName: "Fixer", name: t('badge_city_fixer'), desc: t('badge_city_fixer_desc'), req: 3, current: resolved, icon: <BuildRoundedIcon fontSize="inherit" />, colorClass: "c-green" },
+        { shortName: "Leader", name: t('badge_community_leader'), desc: t('badge_community_leader_desc'), req: 10, current: resolved, icon: <EmojiEventsRoundedIcon fontSize="inherit" />, colorClass: "c-purple" },
+        { shortName: "Pro", name: t('badge_perfectionist'), desc: t('badge_perfectionist_desc'), req: 100, current: successRate, isPercent: true, icon: <TrackChangesRoundedIcon fontSize="inherit" />, colorClass: "c-red" }
     ];
 
     // Find the next badge to unlock
     const nextGoal = badges.find(b => b.current < b.req) || badges[badges.length - 1];
     const taskText = nextGoal.isPercent 
-        ? `Maintain your current rate to hit ${nextGoal.req}%` 
-        : `Report ${nextGoal.req - nextGoal.current} more issue${nextGoal.req - nextGoal.current > 1 ? 's' : ''} to unlock ${nextGoal.name}`;
+        ? t('maintain_rate', { count: nextGoal.req }) 
+        : t('next_goal_text', { count: nextGoal.req - nextGoal.current, name: nextGoal.name, count_plural: nextGoal.req - nextGoal.current });
 
 
     return (
@@ -128,15 +146,15 @@ const CitizenProfile = () => {
                         </svg>
                     </div>
                     <div className="gov-header-title-section">
-                        <h1 className="gov-title">CivicFix Citizen Portal</h1>
-                        <p className="gov-subtitle">Your Civic Impact Dashboard</p>
+                        <h1 className="gov-title">{t('civic_portal') || 'CivicFix Citizen Portal'}</h1>
+                        <p className="gov-subtitle">{t('your_civic_impact')}</p>
                     </div>
                     <div className="gov-header-actions">
                         <button className="btn btn-secondary no-print" onClick={handleBack}>
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{marginRight: '8px', width: '16px'}}>
                                 <path d="M19 12H5M12 19l-7-7 7-7"/>
                             </svg>
-                            Back to Map
+                            {t('back_to_map')}
                         </button>
                     </div>
                 </div>
@@ -171,18 +189,18 @@ const CitizenProfile = () => {
 
                         <div className="hero-badges-side">
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                                <h3 style={{ margin: 0, fontWeight: 700, fontSize: '1.1rem', color: 'var(--gov-navy)' }}>Impact Summary</h3>
+                                <h3 style={{ margin: 0, fontWeight: 700, fontSize: '1.1rem', color: 'var(--gov-navy)' }}>{t('impact_summary')}</h3>
                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                                     <div className="stat-card" style={{ padding: '0.5rem 1rem', minHeight: 'auto' }}>
-                                        <div style={{ fontSize: '0.7rem', fontWeight: 600 }}>{totalReported} Reported</div>
+                                        <div style={{ fontSize: '0.7rem', fontWeight: 600 }}>{totalReported} {t('reported_stat')}</div>
                                     </div>
                                     <div className="stat-card" style={{ padding: '0.5rem 1rem', minHeight: 'auto' }}>
-                                        <div style={{ fontSize: '0.7rem', fontWeight: 600 }}>{resolved} Resolved</div>
+                                        <div style={{ fontSize: '0.7rem', fontWeight: 600 }}>{resolved} {t('resolved_stat')}</div>
                                     </div>
                                 </div>
                             </div>
                             
-                            <h4 style={{ fontSize: '0.8rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>Unlocked Badges</h4>
+                            <h4 style={{ fontSize: '0.8rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>{t('unlocked_badges')}</h4>
                             <div className="badges-grid">
                                 {badges.slice(0, 4).map((badge, idx) => {
                                     const isUnlocked = badge.current >= badge.req;
@@ -201,7 +219,7 @@ const CitizenProfile = () => {
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: '#f8fafc', padding: '1rem', borderRadius: '14px', border: '1px solid #eef2f6' }}>
                                         <RocketLaunchRoundedIcon style={{ color: 'var(--primary-color)' }} fontSize="small" />
                                         <div>
-                                            <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', color: '#64748b' }}>Next Goal</div>
+                                            <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', color: '#64748b' }}>{t('next_goal_label')}</div>
                                             <div style={{ fontSize: '0.85rem', color: 'var(--gov-navy)', fontWeight: 700 }}>{taskText}</div>
                                         </div>
                                     </div>
@@ -216,19 +234,19 @@ const CitizenProfile = () => {
                     <div className="motivation-card">
                         <div className="motivation-icon"><RocketLaunchRoundedIcon fontSize="inherit" /></div>
                         <div className="motivation-text">
-                            <h3>Ready to make an impact?</h3>
-                            <p>Report your first civic issue today to earn your first 20 XP and unlock the "First Report" badge!</p>
+                            <h3>{t('goal_ready')}</h3>
+                            <p>{t('goal_report_first')}</p>
                         </div>
                     </div>
                 ) : (
                     <div className="motivation-card ai-highlight">
                         <div className="motivation-icon"><LocalFireDepartmentRoundedIcon fontSize="inherit" /></div>
                         <div className="motivation-text">
-                            <h3>Personalized Insight</h3>
+                            <h3>{t('insight_title')}</h3>
                             <p>
                                 {successRate < 70 
-                                    ? "Upload clearer, well-lit images of issues to help officers validate and resolve them faster." 
-                                    : `You're close! ${taskText}. Every report helps the community grow.`}
+                                    ? t('insight_low_rate') 
+                                    : t('next_goal_text', { count: nextGoal.req - nextGoal.current, name: nextGoal.name })}
                             </p>
                         </div>
                     </div>
@@ -381,6 +399,38 @@ const CitizenProfile = () => {
                             })}
                         </div>
                     )}
+                </section>
+
+                {/* 7. SETTINGS SECTION */}
+                <section style={{ paddingBottom: '3rem' }}>
+                    <h3 style={{ marginBottom: '1.5rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="24" height="24" style={{ color: 'var(--gray-600)' }}>
+                            <path d="M12.22 2h-.44a2 2 0 0 0-2 2a2 2 0 0 1-2 2a2 2 0 0 1-2-2a2 2 0 0 0-2-2h-.44a2 2 0 0 0-2 2a2 2 0 0 0 2 2a2 2 0 0 1 2 2a2 2 0 0 1-2 2a2 2 0 0 0-2 2a2 2 0 0 0 2 2a2 2 0 0 1 2 2a2 2 0 0 1-2 2a2 2 0 0 0-2 2h.44a2 2 0 0 0 2-2a2 2 0 0 1 2-2a2 2 0 0 1 2 2a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2a2 2 0 0 1 2-2a2 2 0 0 1 2 2a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2a2 2 0 0 0-2-2a2 2 0 0 1-2-2a2 2 0 0 1 2-2a2 2 0 0 0 2-2a2 2 0 0 0-2-2a2 2 0 0 1-2-2a2 2 0 0 1 2-2a2 2 0 0 0 2-2h-.44a2 2 0 0 0-2 2a2 2 0 0 1-2 2a2 2 0 0 1-2-2a2 2 0 0 0-2-2z" />
+                            <circle cx="12" cy="12" r="3" />
+                        </svg>
+                        Profile Settings
+                    </h3>
+                    
+                    <div className="gamified-card" style={{ padding: '2rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                            <div>
+                                <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>Preferred Language</h4>
+                                <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-tertiary)' }}>Choose your preferred language for the interface and AI reports.</p>
+                            </div>
+                            <div className="input-group" style={{ margin: 0, minWidth: '200px' }}>
+                                <select 
+                                    className="input-field" 
+                                    style={{ margin: 0 }}
+                                    value={localStorage.getItem('language') || 'en'}
+                                    onChange={(e) => handleLanguageUpdate(e.target.value)}
+                                >
+                                    <option value="en">English</option>
+                                    <option value="hi">हिन्दी (Hindi)</option>
+                                    <option value="te">తెలుగు (Telugu)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
                 </section>
 
             </main>

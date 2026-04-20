@@ -164,20 +164,11 @@ const OTPVerify = () => {
             
             <div className="card otp-wrapper-card">
                 <div className="auth-header">
-                    <h2>{isSignup ? t('verify_email') || 'Verify Email' : t('login')}</h2>
-                    <p>{t('enter_verification_code') || 'Enter the verification code'}</p>
+                    <h2>{isSignup ? t('verify_email') || 'Verify Email' : t('verify_identity')}</h2>
+                    <p>{t('otp_sent_to')} <span className="email-highlight">{email}</span></p>
                 </div>
                 
                 <div className="auth-body">
-                    <p style={{ 
-                        textAlign: 'center', 
-                        marginBottom: '2rem',
-                        color: 'var(--text-secondary)'
-                    }}>
-                        {t('otp_sent_message') || "We've sent a 6-digit code to"}<br />
-                        <strong style={{ color: 'var(--primary)' }}>{email}</strong>
-                    </p>
-
                     {error && (
                         <div className="error-message">
                             <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
@@ -207,47 +198,26 @@ const OTPVerify = () => {
                             ))}
                         </div>
 
-                        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-                            <span className={`timer ${timer === 0 ? 'expired' : ''}`}>
-                                {timer > 0 ? (
-                                    <>{t('time_remaining') || 'Time remaining'}: {formatTime(timer)}</>
-                                ) : (
-                                    t('code_expired') || 'Code expired'
-                                )}
-                            </span>
-                        </div>
-
                         <button 
                             type="submit" 
-                            className="btn btn-primary" 
-                            style={{ width: '100%' }} 
-                            disabled={loading || timer === 0}
+                            className="btn btn-primary btn-block btn-lg" 
+                            disabled={loading}
                         >
-                            {loading ? (
-                                <>
-                                    <span className="loader"></span>
-                                    {t('verifying') || 'Verifying...'}
-                                </>
-                            ) : (
-                                isSignup ? (t('verify_continue') || 'Verify & Continue') : (t('login') || 'Login')
-                            )}
+                            {loading ? t('loading') : t('verify_proceed')}
                         </button>
                     </form>
 
-                    <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-                        <button
-                            className="link"
+                    <div className="auth-footer" style={{ marginTop: '2.5rem', textAlign: 'center' }}>
+                        <p style={{ color: '#64748B', marginBottom: '1rem' }}>
+                            {t('no_otp')}
+                        </p>
+                        <button 
+                            className="btn-link"
                             onClick={handleResend}
-                            disabled={timer > 0 || loading}
-                            style={{
-                                background: 'none',
-                                border: 'none',
-                                fontSize: '0.875rem',
-                                opacity: (timer > 0 || loading) ? 0.5 : 1,
-                                cursor: (timer > 0 || loading) ? 'not-allowed' : 'pointer'
-                            }}
+                            disabled={timer > 0}
+                            style={{ color: timer > 0 ? '#94A3B8' : '#1E40AF', fontWeight: '700' }}
                         >
-                            {t('didnt_receive') || "Didn't receive code?"} <strong>{t('resend') || 'Resend'}</strong>
+                            {timer > 0 ? `${t('resend_code')} (${formatTime(timer)})` : t('resend_code')}
                         </button>
                     </div>
 

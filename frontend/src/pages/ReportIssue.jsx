@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import { 
     PhotoCameraRounded as CameraIcon,
     LocationOnRounded as MapIcon,
@@ -26,6 +27,7 @@ L.Icon.Default.mergeOptions({
 });
 
 const ReportIssue = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
 
     // State
@@ -43,11 +45,11 @@ const ReportIssue = () => {
 
     // Filtered Icons for UI
     const steps = [
-        "Initializing AI Analysis Engine...",
-        "Scanning Image Structural Patterns...",
-        "Decoding Semantic Intent & Language...",
-        "Validating Geospatial Coordinates...",
-        "Establishing Official System Record..."
+        t('step_ai_init'),
+        t('step_scanning'),
+        t('step_decoding'),
+        t('step_validating'),
+        t('step_establishing')
     ];
 
     // Refs
@@ -79,7 +81,7 @@ const ReportIssue = () => {
             setStream(mediaStream);
             if (videoRef.current) videoRef.current.srcObject = mediaStream;
         } catch (err) {
-            setCameraError("Camera Access Denied. Please enable permissions.");
+            setCameraError(t('camera_denied'));
         }
     };
 
@@ -92,12 +94,12 @@ const ReportIssue = () => {
 
     const getLocation = () => {
         if (!navigator.geolocation) {
-            setLocationError("Geolocation not supported.");
+            setLocationError(t('geo_not_supported'));
             return;
         }
         navigator.geolocation.getCurrentPosition(
             (pos) => setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-            () => setLocationError("Unable to retrieve location.")
+            () => setLocationError(t('geo_unable'))
         );
     };
 
@@ -170,7 +172,7 @@ const ReportIssue = () => {
             await apiCall;
             setTimeout(() => navigate('/dashboard'), 1000);
         } catch (err) {
-            alert("Submission failed. Please try again.");
+            alert(t('submission_failed'));
             setIsSubmitting(false);
         }
     };
@@ -180,7 +182,7 @@ const ReportIssue = () => {
             {isSubmitting && (
                 <div className="ai-processing-overlay">
                     <div className="ai-processing-card">
-                        <h3 className="ai-processing-title">Official Verification</h3>
+                        <h3 className="ai-processing-title">{t('official_verification')}</h3>
                         <div className="progress-container-large"><div className="progress-bar-fill" style={{ width: `${progress}%` }}></div></div>
                         <p className="current-step-text">{steps[analysisStep]}</p>
                         <div className="ai-visual-scanner">
@@ -195,10 +197,10 @@ const ReportIssue = () => {
                 <div className="gov-header-content">
                     <div className="gov-emblem-ui"><NoteIcon /></div>
                     <div className="gov-header-title-section">
-                        <h1 className="gov-title">CivicFix | Report Infrastructure Issue</h1>
-                        <p className="gov-subtitle">Official Smart City Reporting Platform</p>
+                        <h1 className="gov-title">CivicFix | {t('report_infra_issue')}</h1>
+                        <p className="gov-subtitle">{t('smart_city_platform')}</p>
                     </div>
-                    <button className="btn-cancel" onClick={() => navigate('/dashboard')}>EXIT</button>
+                    <button className="btn-cancel" onClick={() => navigate('/dashboard')}>{t('exit')}</button>
                 </div>
             </header>
 
@@ -209,7 +211,7 @@ const ReportIssue = () => {
                     <section className="ui-card">
                         <div className="card-header">
                             <CameraIcon className="card-icon" />
-                            <h3>UPLOAD EVIDENCE</h3>
+                            <h3>{t('upload_evidence')}</h3>
                         </div>
                         <div className="upload-container">
                             <canvas ref={canvasRef} style={{ display: 'none' }} />
@@ -218,7 +220,7 @@ const ReportIssue = () => {
                                     <video ref={videoRef} autoPlay playsInline muted />
                                     <div className="dashed-overlay" onClick={capturePhoto}>
                                         <CameraIcon style={{ fontSize: 48, color: '#94a3b8' }} />
-                                        <p>Click to capture clear photo</p>
+                                        <p>{t('click_capture_photo')}</p>
                                     </div>
                                 </div>
                             ) : (
@@ -226,10 +228,10 @@ const ReportIssue = () => {
                                     <img src={capturedImage} alt="Preview" className="evidence-preview" />
                                     <div className="preview-actions">
                                         <button className="btn-secondary" onClick={() => { setCapturedImage(null); startCamera(); }}>
-                                            <RefreshIcon /> RETAKE
+                                            <RefreshIcon /> {t('retake')}
                                         </button>
                                         <button className="btn-danger" onClick={() => setCapturedImage(null)}>
-                                            <DeleteIcon /> REMOVE
+                                            <DeleteIcon /> {t('remove')}
                                         </button>
                                     </div>
                                 </div>
@@ -241,7 +243,7 @@ const ReportIssue = () => {
                     <section className="ui-card mt-24">
                         <div className="card-header">
                             <MapIcon className="card-icon" />
-                            <h3>LOCATION MAP</h3>
+                            <h3>{t('location_map_label')}</h3>
                         </div>
                         <div className="map-preview-container">
                             {location ? (
@@ -252,19 +254,19 @@ const ReportIssue = () => {
                             ) : (
                                 <div className="map-placeholder">
                                     <div className="spinner-small"></div>
-                                    <p>{locationError || "Detecting GPS..."}</p>
+                                    <p>{locationError || t('detecting_gps')}</p>
                                 </div>
                             )}
                         </div>
                         <div className="location-footer">
                             <div className="geo-badge">
-                                <VerifiedIcon className="verified-icon" /> GPS VERIFIED
+                                <VerifiedIcon className="verified-icon" /> {t('gps_verified')}
                             </div>
                             <div className="coord-text">
                                 {location ? `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}` : "---, ---"}
                             </div>
                             <button className="btn-text-only" onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${location?.lat},${location?.lng}`, '_blank')}>
-                                VIEW FULL MAP ↗
+                                {t('view_full_map')} ↗
                             </button>
                         </div>
                     </section>
@@ -275,7 +277,7 @@ const ReportIssue = () => {
                     <section className="ui-card full-height">
                         <div className="card-header">
                             <NoteIcon className="card-icon" />
-                            <h3>DESCRIBE THE ISSUE</h3>
+                            <h3>{t('describe_issue_title')}</h3>
                         </div>
                         
                         <div className="input-row">
@@ -288,7 +290,7 @@ const ReportIssue = () => {
                                 </select>
                             </div>
                             <button className={`speak-btn ${isListening ? 'active' : ''}`} onClick={handleSpeech}>
-                                <MicIcon /> {isListening ? 'STOP' : 'SPEAK'}
+                                <MicIcon /> {isListening ? t('stop') : t('speak')}
                             </button>
                         </div>
                         
@@ -296,22 +298,24 @@ const ReportIssue = () => {
                         
                         <textarea 
                             className="description-area"
-                            placeholder="e.g., Pothole near main road causing traffic congestion..."
+                            placeholder={t('desc_placeholder')}
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                         />
-                        <p className="helper-text">Please provide as much detail as possible to help officers resolve the issue quickly.</p>
+                        <p className="helper-text">{t('detail_helper_text')}</p>
+
+                        <div className="submit-box">
+                            <button 
+                                className={`btn-primary-large ${(!capturedImage || !location || !description.trim() || isSubmitting) ? 'disabled' : ''}`} 
+                                onClick={handleSubmit}
+                                disabled={!capturedImage || !location || !description.trim() || isSubmitting}
+                            >
+                                <SendIcon /> {t('official_submit')}
+                            </button>
+                        </div>
                     </section>
                 </div>
             </main>
-
-            {/* BOTTOM SUBMIT SECTION */}
-            <footer className="footer-submit">
-                <button className="btn-submit-premium" onClick={handleSubmit} disabled={!capturedImage || !location || !description.trim()}>
-                    <SendIcon className="submit-icon" />
-                    <span>SUBMIT OFFICIAL REPORT</span>
-                </button>
-            </footer>
         </div>
     );
 };

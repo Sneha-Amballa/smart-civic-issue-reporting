@@ -424,16 +424,34 @@ exports.getMyIssues = async (req, res) => {
 
         const userLang = req.user.language || req.user.preferred_language || 'en';
 
-        const localizedIssues = issues.map(issue => {
-            const desc = getLocalizedText(issue.description, userLang);
+        const localizedIssues = await Promise.all(issues.map(async (issue) => {
+            let translations = {};
+            try {
+                translations = typeof issue.description === 'string' ? JSON.parse(issue.description) : (issue.description || {});
+            } catch (e) { translations = {}; }
+
+            // Ensure all 3 languages exist (Lazy Translate missing ones)
+            const required = ['en', 'hi', 'te'];
+            const missing = required.filter(lang => !translations[lang]);
+
+            if (missing.length > 0 && issue.voice_text) {
+                try {
+                    const transRes = await require('../services/translationService').translateAndDetect(issue.voice_text);
+                    translations = { ...translations, ...transRes.translations };
+                    
+                    // Background update
+                    sql`UPDATE issues SET description = ${JSON.stringify(translations)} WHERE id = ${issue.id}`.catch(console.error);
+                } catch (err) {
+                    console.error("Lazy translation failed for list:", err.message);
+                }
+            }
+
             return {
                 ...issue,
-                description: desc || issue.voice_text, // Returns localized text
-                original_text: issue.voice_text, // Keeps original input
-                // Clean up raw JSON to prevent leaking all languages
-                original_language: undefined
+                description: translations, // Sending FULL OBJECT
+                original_text: issue.voice_text
             };
-        });
+        }));
 
         res.json(localizedIssues);
     } catch (err) {
@@ -463,14 +481,34 @@ exports.getAllIssues = async (req, res) => {
             ORDER BY created_at DESC
         `;
 
-        const localizedIssues = issues.map(issue => {
-            const desc = getLocalizedText(issue.description, userLang);
+        const localizedIssues = await Promise.all(issues.map(async (issue) => {
+            let translations = {};
+            try {
+                translations = typeof issue.description === 'string' ? JSON.parse(issue.description) : (issue.description || {});
+            } catch (e) { translations = {}; }
+
+            // Ensure all languages exist
+            const requiredLanguageList = ['en', 'hi', 'te'];
+            const missing = requiredLanguageList.filter(lang => !translations[lang]);
+
+            if (missing.length > 0 && issue.voice_text) {
+                try {
+                    const transRes = await require('../services/translationService').translateAndDetect(issue.voice_text);
+                    translations = { ...translations, ...transRes.translations };
+                    
+                    // Background update
+                    sql`UPDATE issues SET description = ${JSON.stringify(translations)} WHERE id = ${issue.id}`.catch(console.error);
+                } catch (err) {
+                    console.error("Lazy translation failed for all-list:", err.message);
+                }
+            }
+
             return {
                 ...issue,
-                description: desc || issue.voice_text,
+                description: translations, // Sending FULL OBJECT
                 original_text: issue.voice_text
             };
-        });
+        }));
 
         res.json(localizedIssues);
     } catch (err) {
@@ -508,8 +546,27 @@ exports.getIssueDetails = async (req, res) => {
         // Authorization checks for update/delete operations remain separate.
         const userLang = req.user.language || req.user.preferred_language || 'en';
 
-        const desc = getLocalizedText(issue.description, userLang);
-        issue.translated_description = desc || issue.voice_text;
+        let translations = {};
+        try {
+            translations = typeof issue.description === 'string' ? JSON.parse(issue.description) : (issue.description || {});
+        } catch (e) { translations = {}; }
+
+        // Ensure all languages exist
+        const needed = ['en', 'hi', 'te'];
+        if (needed.some(l => !translations[l]) && issue.voice_text) {
+            try {
+                const transRes = await require('../services/translationService').translateAndDetect(issue.voice_text);
+                translations = { ...translations, ...transRes.translations };
+                
+                // Background update
+                sql`UPDATE issues SET description = ${JSON.stringify(translations)} WHERE id = ${id}`.catch(console.error);
+            } catch (err) {
+                console.error("Lazy translation failed for details:", err.message);
+            }
+        }
+
+        issue.description = translations; // Full Object
+        issue.translated_description = translations[userLang] || translations['en'] || issue.voice_text;
         // Keep original voice_text as is
 
         if (issue.resolution_note) {

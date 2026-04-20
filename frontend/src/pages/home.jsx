@@ -1,8 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import '../styles/home.css';
 
 const Home = () => {
+    const { t, i18n } = useTranslation();
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
     return (
         <div className="home-page">
@@ -19,15 +21,39 @@ const Home = () => {
                         </div>
                         <div className="logo-text-container">
                             <span className="logo-text">CivicFix</span>
-                            <span className="logo-subtitle">Government of India</span>
+                            <span className="logo-subtitle">{t('gov_subtitle')}</span>
                         </div>
                     </div>
                     <div className="nav-links">
-                        <Link to="/" className="nav-link active">Home</Link>
-                        <a href="#about" className="nav-link">About</a>
-                        <a href="#features" className="nav-link">Features</a>
-                        <Link to="/login" className="nav-link">Login</Link>
-                        <Link to="/signup" className="nav-link signup-btn">Get Started</Link>
+                        <Link to="/" className="nav-link active">{t('nav_home')}</Link>
+                        <a href="#about" className="nav-link">{t('nav_about')}</a>
+                        <a href="#features" className="nav-link">{t('nav_features')}</a>
+                        <Link to="/login" className="nav-link">{t('nav_login')}</Link>
+                        <Link to="/signup" className="nav-link signup-btn">{t('nav_get_started')}</Link>
+                        <select 
+                            className="language-selector-nav"
+                            value={i18n.language}
+                            onChange={(e) => {
+                                const newLang = e.target.value;
+                                localStorage.setItem('language', newLang);
+                                i18n.changeLanguage(newLang);
+                            }}
+                            style={{
+                                background: 'rgba(255, 255, 255, 0.1)',
+                                border: '1px solid rgba(255, 255, 255, 0.2)',
+                                color: 'white',
+                                padding: '0.4rem 0.6rem',
+                                borderRadius: '6px',
+                                outline: 'none',
+                                cursor: 'pointer',
+                                fontSize: '0.875rem',
+                                marginLeft: '1rem'
+                            }}
+                        >
+                            <option value="en" style={{ color: 'black' }}>English</option>
+                            <option value="hi" style={{ color: 'black' }}>हिन्दी</option>
+                            <option value="te" style={{ color: 'black' }}>తెలుగు</option>
+                        </select>
                     </div>
                     {/* Mobile Menu Button */}
                     <button 
@@ -41,11 +67,34 @@ const Home = () => {
                 
                 {/* Mobile Menu */}
                 <div className={`mobile-menu ${isMenuOpen ? 'open' : ''}`}>
-                    <Link to="/" className="mobile-nav-link active" onClick={() => setIsMenuOpen(false)}>Home</Link>
-                    <a href="#about" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>About</a>
-                    <a href="#features" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Features</a>
-                    <Link to="/login" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Login</Link>
-                    <Link to="/signup" className="mobile-nav-link mobile-signup-btn" onClick={() => setIsMenuOpen(false)}>Get Started</Link>
+                    <Link to="/" className="mobile-nav-link active" onClick={() => setIsMenuOpen(false)}>{t('nav_home')}</Link>
+                    <a href="#about" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>{t('nav_about')}</a>
+                    <a href="#features" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>{t('nav_features')}</a>
+                    <Link to="/login" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>{t('nav_login')}</Link>
+                    <Link to="/signup" className="mobile-nav-link mobile-signup-btn" onClick={() => setIsMenuOpen(false)}>{t('nav_get_started')}</Link>
+                    <div className="mobile-nav-link" style={{ paddingTop: '1rem' }}>
+                        <select 
+                            value={i18n.language}
+                            onChange={(e) => {
+                                const newLang = e.target.value;
+                                localStorage.setItem('language', newLang);
+                                i18n.changeLanguage(newLang);
+                                setIsMenuOpen(false);
+                            }}
+                            style={{
+                                width: '100%',
+                                padding: '0.75rem',
+                                borderRadius: '8px',
+                                border: '1px solid #ddd',
+                                background: 'white',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            <option value="en">English</option>
+                            <option value="hi">हिन्दी</option>
+                            <option value="te">తెలుగు</option>
+                        </select>
+                    </div>
                 </div>
             </nav>
 
@@ -57,28 +106,27 @@ const Home = () => {
                             <svg viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M12 2L2 7L12 12L22 7L12 2Z" />
                             </svg>
-                            <span>Digital India Initiative</span>
+                            <span>{t('hero_badge')}</span>
                         </div>
                         <h1 className="hero-title">
-                            Building Better<br />
-                            Cities <span className="hero-highlight">Together</span>
+                            {t('hero_title_1')}<br />
+                            {t('hero_title_2')} <span className="hero-highlight">{t('hero_title_3')}</span>
                         </h1>
                         <p className="hero-subtitle">
-                            Empowering citizens to report civic issues and track their resolution in real-time. 
-                            A transparent, AI-powered platform connecting communities with local governance.
+                            {t('hero_subtitle_home')}
                         </p>
                         <div className="hero-stats">
                             <div className="hero-stat">
                                 <div className="hero-stat-value">10K+</div>
-                                <div className="hero-stat-label">Issues Resolved</div>
+                                <div className="hero-stat-label">{t('stats_resolved_home')}</div>
                             </div>
                             <div className="hero-stat">
                                 <div className="hero-stat-value">5K+</div>
-                                <div className="hero-stat-label">Active Citizens</div>
+                                <div className="hero-stat-label">{t('stats_citizens_home')}</div>
                             </div>
                             <div className="hero-stat">
                                 <div className="hero-stat-value">50+</div>
-                                <div className="hero-stat-label">Cities Covered</div>
+                                <div className="hero-stat-label">{t('stats_cities_home')}</div>
                             </div>
                         </div>
                         <div className="hero-buttons">
@@ -89,13 +137,13 @@ const Home = () => {
             <line x1="20" y1="8" x2="20" y2="14" />
             <line x1="23" y1="11" x2="17" y2="11" />
         </svg>
-        Register as Citizen
+        {t('btn_register_citizen')}
     </Link>
     <Link to="/officer/register" className="btn btn-officer">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
         </svg>
-        Join as Officer
+        {t('btn_join_officer')}
     </Link>
 </div>
                     </div>
@@ -107,8 +155,8 @@ const Home = () => {
                 <polyline points="12 6 12 12 16 14" />
             </svg>
         </div>
-        <div className="card-title">Real-time Tracking</div>
-        <div className="card-desc">GPS-verified issue reporting</div>
+        <div className="card-title">{t('card_tracking')}</div>
+        <div className="card-desc">{t('card_tracking_desc')}</div>
     </div>
     <div className="hero-card hero-card-2">
         <div className="card-icon">
@@ -117,8 +165,8 @@ const Home = () => {
                 <path d="M12 1v6m0 6v6m8.66-15.66-4.24 4.24m-8.48 8.48-4.24 4.24M23 12h-6m-6 0H1m20.66 8.66-4.24-4.24m-8.48-8.48-4.24-4.24" />
             </svg>
         </div>
-        <div className="card-title">AI-Powered</div>
-        <div className="card-desc">Smart issue categorization</div>
+        <div className="card-title">{t('card_ai')}</div>
+        <div className="card-desc">{t('card_ai_desc')}</div>
     </div>
     <div className="hero-card hero-card-3">
         <div className="card-icon">
@@ -127,8 +175,8 @@ const Home = () => {
                 <polyline points="22 4 12 14.01 9 11.01" />
             </svg>
         </div>
-        <div className="card-title">Transparent Process</div>
-        <div className="card-desc">Track resolution status</div>
+        <div className="card-title">{t('card_transparent')}</div>
+        <div className="card-desc">{t('card_transparent_desc')}</div>
     </div>
 </div>
                 </div>
@@ -138,8 +186,8 @@ const Home = () => {
             <section id="features" className="features-section">
                 <div className="section-container">
                     <div className="section-header-center">
-                        <h2 className="section-title">Comprehensive Civic Management</h2>
-                        <p className="section-description">A complete solution for modern urban governance</p>
+                        <h2 className="section-title">{t('features_title')}</h2>
+                        <p className="section-description">{t('features_subtitle')}</p>
                     </div>
 
                     <div className="features-grid">
@@ -150,10 +198,9 @@ const Home = () => {
                                     <circle cx="12" cy="13" r="4" />
                                 </svg>
                             </div>
-                            <h3 className="feature-title">Instant Issue Reporting</h3>
+                            <h3 className="feature-title">{t('feat_reporting_title')}</h3>
                             <p className="feature-description">
-                                Capture photos, add voice descriptions, and auto-detect your location. 
-                                Report civic issues in under 60 seconds.
+                                {t('feat_reporting_desc')}
                             </p>
                         </div>
 
@@ -164,10 +211,9 @@ const Home = () => {
                                     <path d="M12 1v6m0 6v6m8.66-15.66-4.24 4.24m-8.48 8.48-4.24 4.24M23 12h-6m-6 0H1m20.66 8.66-4.24-4.24m-8.48-8.48-4.24-4.24" />
                                 </svg>
                             </div>
-                            <h3 className="feature-title">AI-Powered Verification</h3>
+                            <h3 className="feature-title">{t('feat_ai_title')}</h3>
                             <p className="feature-description">
-                                Advanced AI analyzes reports for authenticity, categorizes issues automatically, 
-                                and routes to the right department.
+                                {t('feat_ai_desc')}
                             </p>
                         </div>
 
@@ -179,10 +225,9 @@ const Home = () => {
                                     <path d="M2 12L12 17L22 12" />
                                 </svg>
                             </div>
-                            <h3 className="feature-title">Government Integration</h3>
+                            <h3 className="feature-title">{t('feat_gov_title')}</h3>
                             <p className="feature-description">
-                                Seamlessly connects with municipal departments. Officers receive 
-                                smart assignments based on expertise and location.
+                                {t('feat_gov_desc')}
                             </p>
                         </div>
 
@@ -193,10 +238,9 @@ const Home = () => {
                                     <polyline points="22 4 12 14.01 9 11.01" />
                                 </svg>
                             </div>
-                            <h3 className="feature-title">Resolution Proof</h3>
+                            <h3 className="feature-title">{t('feat_proof_title')}</h3>
                             <p className="feature-description">
-                                GPS-verified completion photos. Citizens verify work quality. 
-                                Complete transparency from report to resolution.
+                                {t('feat_proof_desc')}
                             </p>
                         </div>
 
@@ -207,10 +251,9 @@ const Home = () => {
                                     <polyline points="9 22 9 12 15 12 15 22" />
                                 </svg>
                             </div>
-                            <h3 className="feature-title">Multi-Language Support</h3>
+                            <h3 className="feature-title">{t('feat_multilang_title')}</h3>
                             <p className="feature-description">
-                                Available in English, Hindi, and regional languages. 
-                                Voice input in your preferred language.
+                                {t('feat_multilang_desc')}
                             </p>
                         </div>
 
@@ -222,10 +265,9 @@ const Home = () => {
                                     <line x1="12" y1="15" x2="12" y2="3" />
                                 </svg>
                             </div>
-                            <h3 className="feature-title">Data Analytics</h3>
+                            <h3 className="feature-title">{t('feat_analytics_title')}</h3>
                             <p className="feature-description">
-                                Advanced dashboards for administrators. Track trends, 
-                                measure performance, and improve city services.
+                                {t('feat_analytics_desc')}
                             </p>
                         </div>
                     </div>
@@ -236,40 +278,40 @@ const Home = () => {
             <section id="about" className="how-it-works-section">
                 <div className="section-container">
                     <div className="section-header-center">
-                        <h2 className="section-title">How It Works</h2>
-                        <p className="section-description">Simple process from report to resolution</p>
+                        <h2 className="section-title">{t('how_it_works_title')}</h2>
+                        <p className="section-description">{t('how_it_works_subtitle')}</p>
                     </div>
 
                     <div className="steps-container">
                         <div className="step">
                             <div className="step-number">1</div>
                             <div className="step-content">
-                                <h3>Report Issue</h3>
-                                <p>Capture photo, describe problem using voice or text, location auto-detected</p>
+                                <h3>{t('step_1')}</h3>
+                                <p>{t('step_1_desc')}</p>
                             </div>
                         </div>
                         <div className="step-arrow">→</div>
                         <div className="step">
                             <div className="step-number">2</div>
                             <div className="step-content">
-                                <h3>AI Verification</h3>
-                                <p>System validates and categorizes, assigns confidence score, routes to department</p>
+                                <h3>{t('step_2')}</h3>
+                                <p>{t('step_2_desc')}</p>
                             </div>
                         </div>
                         <div className="step-arrow">→</div>
                         <div className="step">
                             <div className="step-number">3</div>
                             <div className="step-content">
-                                <h3>Officer Assigned</h3>
-                                <p>Best-suited officer receives task, real-time status updates, transparent timeline</p>
+                                <h3>{t('step_3')}</h3>
+                                <p>{t('step_3_desc')}</p>
                             </div>
                         </div>
                         <div className="step-arrow">→</div>
                         <div className="step">
                             <div className="step-number">4</div>
                             <div className="step-content">
-                                <h3>Resolution & Feedback</h3>
-                                <p>Proof of completion uploaded, citizen verification, quality rating provided</p>
+                                <h3>{t('step_4')}</h3>
+                                <p>{t('step_4_desc')}</p>
                             </div>
                         </div>
                     </div>
@@ -280,16 +322,16 @@ const Home = () => {
             <section className="cta-section">
                 <div className="cta-container">
                     <div className="cta-content">
-                        <h2 className="cta-title">Be Part of the Change</h2>
+                        <h2 className="cta-title">{t('cta_title')}</h2>
                         <p className="cta-subtitle">
-                            Join thousands of citizens making their cities better, one report at a time.
+                            {t('cta_subtitle')}
                         </p>
                         <div className="cta-buttons">
                             <Link to="/signup" className="btn btn-primary btn-lg">
-                                Start Reporting Issues
+                                {t('cta_btn_start')}
                             </Link>
                             <Link to="/login" className="btn btn-secondary btn-lg">
-                                Login to Continue
+                                {t('cta_btn_login')}
                             </Link>
                         </div>
                     </div>
@@ -310,30 +352,29 @@ const Home = () => {
                                 <span className="footer-logo-text">CivicFix</span>
                             </div>
                             <p className="footer-description">
-                                A Digital India initiative connecting citizens with local governance 
-                                for better civic infrastructure and services.
+                                {t('footer_desc')}
                             </p>
                         </div>
                         <div className="footer-col">
-                            <h4 className="footer-title">Quick Links</h4>
+                            <h4 className="footer-title">{t('footer_quick_links')}</h4>
                             <ul className="footer-links">
-                                <li><a href="#features">Features</a></li>
-                                <li><a href="#about">About Us</a></li>
-                                <li><Link to="/signup">Register</Link></li>
-                                <li><Link to="/login">Login</Link></li>
+                                <li><a href="#features">{t('nav_features')}</a></li>
+                                <li><a href="#about">{t('nav_about')}</a></li>
+                                <li><Link to="/signup">{t('signup')}</Link></li>
+                                <li><Link to="/login">{t('login')}</Link></li>
                             </ul>
                         </div>
                         <div className="footer-col">
-                            <h4 className="footer-title">For Officers</h4>
+                            <h4 className="footer-title">{t('footer_for_officers')}</h4>
                             <ul className="footer-links">
-                                <li><Link to="/officer/register">Register as Officer</Link></li>
-                                <li><Link to="/login">Officer Login</Link></li>
+                                <li><Link to="/officer/register">{t('btn_join_officer')}</Link></li>
+                                <li><Link to="/login">{t('nav_login')}</Link></li>
                                 <li><a href="#faq">Guidelines</a></li>
                                 <li><a href="#support">Support</a></li>
                             </ul>
                         </div>
                         <div className="footer-col">
-                            <h4 className="footer-title">Legal</h4>
+                            <h4 className="footer-title">{t('footer_legal')}</h4>
                             <ul className="footer-links">
                                 <li><a href="#privacy">Privacy Policy</a></li>
                                 <li><a href="#terms">Terms of Service</a></li>
@@ -344,7 +385,7 @@ const Home = () => {
                     </div>
                     <div className="footer-bottom">
                         <p className="footer-copyright">
-                            © 2026 CivicFix. Government of India | Ministry of Urban Development. All rights reserved.
+                            {t('footer_copyright')}
                         </p>
                         <div className="social-links">
                             <a href="#twitter" aria-label="Twitter"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/></svg></a>

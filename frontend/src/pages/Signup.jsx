@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, Link } from 'react-router-dom';
+import i18n from '../i18n';
 import '../styles/AuthStyles.css';
 
 const Signup = () => {
@@ -23,6 +24,8 @@ const Signup = () => {
     const handleLanguageChange = (e) => {
         const lang = e.target.value;
         setFormData({ ...formData, preferred_language: lang });
+        localStorage.setItem('language', lang);
+        i18n.changeLanguage(lang);
     };
 
     const handleSubmit = async (e) => {
@@ -54,15 +57,15 @@ const Signup = () => {
                             </svg>
                             <h2>CIVICFIX</h2>
                         </div>
-                        <p>Streamlining urban governance with AI-powered reporting and transparent civic management.</p>
-                        <Link to="/" className="branding-btn">Back to Home</Link>
+                        <p>{t('branding_desc')}</p>
+                        <Link to="/" className="branding-btn">{t('back_to_home')}</Link>
                     </div>
                 </div>
                 
                 <div className="auth-form-wrapper">
                     <div className="auth-header">
-                        <h2>Create Account</h2>
-                        <p>Join us to access government services</p>
+                        <h2>{t('signup_title')}</h2>
+                        <p>{t('auth_subtitle_signup')}</p>
                     </div>
                 
                 <div className="auth-body">
@@ -115,33 +118,24 @@ const Signup = () => {
                         </div>
 
                         <div className="input-group">
-                            <label>{t('language')}</label>
-                            <select
-                                name="preferred_language"
+                            <label>{t('preferred_language_label')}</label>
+                            <select 
                                 className="input-field"
                                 value={formData.preferred_language}
                                 onChange={handleLanguageChange}
                             >
-                                <option value="en">English</option>
-                                <option value="hi">हिन्दी (Hindi)</option>
-                                <option value="te">తెలుగు (Telugu)</option>
+                                <option value="en">{t('lang_en')}</option>
+                                <option value="hi">{t('lang_hi')}</option>
+                                <option value="te">{t('lang_te')}</option>
                             </select>
                         </div>
 
                         <button 
                             type="submit" 
-                            className="btn btn-primary" 
-                            style={{ width: '100%' }} 
+                            className="btn btn-primary btn-block" 
                             disabled={loading}
                         >
-                            {loading ? (
-                                <>
-                                    <span className="loader"></span>
-                                    {t('creating_account')}
-                                </>
-                            ) : (
-                                t('create_account')
-                            )}
+                            {loading ? t('loading') : t('cta_signup')}
                         </button>
                     </form>
 

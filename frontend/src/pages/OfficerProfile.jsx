@@ -20,8 +20,10 @@ import RocketLaunchRoundedIcon from '@mui/icons-material/RocketLaunchRounded';
 import AssessmentRoundedIcon from '@mui/icons-material/AssessmentRounded';
 import TrendingUpRoundedIcon from '@mui/icons-material/TrendingUpRounded';
 import CalendarTodayRoundedIcon from '@mui/icons-material/CalendarTodayRounded';
+import Loading from '../components/Loading';
 
 const OfficerProfile = () => {
+
     const navigate = useNavigate();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -63,14 +65,28 @@ const OfficerProfile = () => {
         navigate('/officer/dashboard');
     };
 
-    if (loading) {
-        return (
-            <div className="loading-overlay">
-                <div className="spinner"></div>
-                <p style={{ marginTop: '1.5rem', color: '#616161', fontSize: '1rem' }}>Loading Dashboard...</p>
-            </div>
-        );
-    }
+    const handleLanguageUpdate = async (newLang) => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.post(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/auth/update-language`, 
+                { language: newLang },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            
+            // Update local storage
+            localStorage.setItem('token', response.data.token);
+            localStorage.setItem('language', newLang);
+            
+            // Update localized UI
+            window.location.reload(); 
+        } catch (err) {
+            console.error('Error updating language:', err);
+            alert('Failed to update language preference.');
+        }
+    };
+
+    if (loading) return <Loading message="Synchronizing Officer Metrics" />;
+
 
     if (error) {
         return (
@@ -242,6 +258,38 @@ const OfficerProfile = () => {
                                     </div>
                                 </div>
                             )}
+                        </div>
+                    </div>
+                </section>
+
+                {/* 8. SETTINGS SECTION */}
+                <section style={{ paddingBottom: '3rem' }}>
+                    <h3 style={{ marginBottom: '1.5rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="24" height="24" style={{ color: 'var(--gray-600)' }}>
+                            <path d="M12.22 2h-.44a2 2 0 0 0-2 2a2 2 0 0 1-2 2a2 2 0 0 1-2-2a2 2 0 0 0-2-2h-.44a2 2 0 0 0 2-2a2 2 0 0 0 2 2a2 2 0 0 1 2 2a2 2 0 0 1-2 2a2 2 0 0 0-2 2a2 2 0 0 0 2 2a2 2 0 0 1 2 2a2 2 0 0 1-2 2a2 2 0 0 0-2 2h.44a2 2 0 0 0 2-2a2 2 0 0 1 2-2a2 2 0 0 1 2 2a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2a2 2 0 0 1 2-2a2 2 0 0 1 2 2a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2a2 2 0 0 0-2-2a2 2 0 0 1-2-2a2 2 0 0 1 2-2a2 2 0 0 0 2-2a2 2 0 0 0-2-2a2 2 0 0 1-2-2a2 2 0 0 1 2-2a2 2 0 0 0 2-2h-.44a2 2 0 0 0-2 2a2 2 0 0 1-2 2a2 2 0 0 1-2-2a2 2 0 0 0-2-2z" />
+                            <circle cx="12" cy="12" r="3" />
+                        </svg>
+                        Officer Preferences
+                    </h3>
+                    
+                    <div className="gamified-card" style={{ padding: '2rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                            <div>
+                                <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>Interface Language</h4>
+                                <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-tertiary)' }}>Set your preferred language for administration and field reporting.</p>
+                            </div>
+                            <div className="input-group" style={{ margin: 0, minWidth: '200px' }}>
+                                <select 
+                                    className="input-field" 
+                                    style={{ margin: 0 }}
+                                    value={localStorage.getItem('language') || 'en'}
+                                    onChange={(e) => handleLanguageUpdate(e.target.value)}
+                                >
+                                    <option value="en">English</option>
+                                    <option value="hi">हिन्दी (Hindi)</option>
+                                    <option value="te">తెలుగు (Telugu)</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </section>

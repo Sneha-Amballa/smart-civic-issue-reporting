@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
+import i18n from '../i18n';
 import '../styles/OfficerRegister.css';
 
 const OfficerRegister = () => {
@@ -11,6 +12,7 @@ const OfficerRegister = () => {
         phone: '',
         department: '',
         designation: '',
+        preferred_language: 'en',
     });
     const [document, setDocument] = useState(null);
     const [documentPreview, setDocumentPreview] = useState(null);
@@ -19,7 +21,13 @@ const OfficerRegister = () => {
     const [processingStage, setProcessingStage] = useState('');
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        setFormData({ ...formData, [name]: value });
+        
+        if (name === 'preferred_language') {
+            localStorage.setItem('language', value);
+            i18n.changeLanguage(value);
+        }
     };
 
     const handleFileChange = (e) => {
@@ -73,6 +81,7 @@ const OfficerRegister = () => {
             data.append('phone', formData.phone);
             data.append('department', formData.department);
             data.append('designation', formData.designation);
+            data.append('preferred_language', formData.preferred_language);
             data.append('document', document);
 
             setProcessingStage('Processing document with OCR...');
@@ -273,6 +282,29 @@ const OfficerRegister = () => {
                                     disabled={loading}
                                 />
                             </div>
+                        </div>
+
+                        <div className="input-group">
+                            <label>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                                    <line x1="2" y1="12" x2="22" y2="12" />
+                                </svg>
+                                Preferred Language *
+                            </label>
+                            <select 
+                                name="preferred_language" 
+                                className="input-field" 
+                                value={formData.preferred_language} 
+                                onChange={handleChange} 
+                                required
+                                disabled={loading}
+                            >
+                                <option value="en">English</option>
+                                <option value="hi">हिन्दी (Hindi)</option>
+                                <option value="te">తెలుగు (Telugu)</option>
+                            </select>
                         </div>
 
                         <div className="input-group file-input-group">

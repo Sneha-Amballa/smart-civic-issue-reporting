@@ -396,23 +396,33 @@ const getDepartmentIssues = async (req, res) => {
                 created_at DESC
         `;
 
-        const userLang = req.user.language || req.user.preferred_language || 'en';
+        const localizedIssues = await Promise.all(issues.map(async (issue) => {
+            let translations = {};
+            try {
+                translations = typeof issue.description === 'string' ? JSON.parse(issue.description) : (issue.description || {});
+            } catch (e) { translations = {}; }
 
-        const getLocalizedText = (obj, lang) => {
-            if (!obj) return null;
-            if (typeof obj === 'string') return obj;
-            return obj[lang] || obj['en'] || Object.values(obj)[0] || '';
-        };
+            // Ensure all 3 languages exist
+            const officerNeeded = ['en', 'hi', 'te'];
+            if (officerNeeded.some(l => !translations[l]) && issue.voice_text) {
+                try {
+                    const transRes = await require('../services/translationService').translateAndDetect(issue.voice_text);
+                    translations = { ...translations, ...transRes.translations };
+                    
+                    // Background update
+                    sql`UPDATE issues SET description = ${JSON.stringify(translations)} WHERE id = ${issue.id}`.catch(console.error);
+                } catch (err) {
+                    console.error("Lazy translation failed for officer-list:", err.message);
+                }
+            }
 
-        const localizedIssues = issues.map(issue => {
-            const desc = getLocalizedText(issue.description, userLang);
             return {
                 ...issue,
-                description: desc || issue.voice_text,
-                voice_text: desc || issue.voice_text,
-                resolution_note: getLocalizedText(issue.resolution_note, userLang) || issue.resolution_note
+                description: translations, // Sending FULL OBJECT
+                voice_text: translations[userLang] || translations['en'] || issue.voice_text,
+                resolution_note: translations[userLang] || translations['en'] || issue.resolution_note
             };
-        });
+        }));
 
         res.json(localizedIssues);
     } catch (err) {

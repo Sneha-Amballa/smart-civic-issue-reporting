@@ -1,27 +1,29 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import '../styles/AuthStyles.css';
 
 const SelectRole = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [selectedRole, setSelectedRole] = useState('citizen');
 
     const roleOptions = [
         {
             key: 'citizen',
-            title: 'Citizen',
-            description: 'Register as a resident to report issues, track resolutions, and engage with community updates.',
+            title: t('role_citizen_title'),
+            description: t('role_citizen_desc'),
             accent: '#3B82F6',
             accentBg: 'rgba(59, 130, 246, 0.12)',
-            chips: ['Report issues', 'Track progress', 'Community feed']
+            chips: [t('report_issues') || 'Report issues', t('track_progress') || 'Track progress', t('community_feed') || 'Community feed']
         },
         {
             key: 'officer',
-            title: 'Officer',
-            description: 'Register as a government official to manage tasks, review verification, and coordinate infrastructure fixes.',
+            title: t('role_officer_title'),
+            description: t('role_officer_desc'),
             accent: '#10B981',
             accentBg: 'rgba(16, 185, 129, 0.12)',
-            chips: ['Manage tasks', 'Verify reports', 'Coordinate fixes']
+            chips: [t('manage_tasks') || 'Manage tasks', t('verify_reports') || 'Verify reports', t('coordinate_fixes') || 'Coordinate fixes']
         }
     ];
 
@@ -35,8 +37,8 @@ const SelectRole = () => {
                             <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                     </div>
-                    <h2 style={{ fontSize: '2rem', fontWeight: '800', color: '#111827', fontFamily: 'Outfit, sans-serif', margin: '0 0 0.5rem 0', letterSpacing: '-0.02em' }}>Choose Your Role</h2>
-                    <p style={{ color: '#6B7280', fontSize: '1rem', maxWidth: '480px', margin: '0 auto', lineHeight: '1.4' }}>Select an account type to get started with CivicFix and begin improving your neighborhood.</p>
+                    <h2 style={{ fontSize: '2rem', fontWeight: '800', color: '#111827', fontFamily: 'Outfit, sans-serif', margin: '0 0 0.5rem 0', letterSpacing: '-0.02em' }}>{t('choose_role')}</h2>
+                    <p style={{ color: '#6B7280', fontSize: '1rem', maxWidth: '480px', margin: '0 auto', lineHeight: '1.4' }}>{t('role_selection_desc')}</p>
                 </div>
 
                 <div className="role-selection-grid">
@@ -81,14 +83,14 @@ const SelectRole = () => {
                         className={`btn btn-primary ${selectedRole}-btn`}
                         onClick={() => navigate(selectedRole === 'officer' ? '/officer/register' : '/citizen-signup')}
                     >
-                        Continue as {selectedRole === 'officer' ? 'Officer' : 'Citizen'}
+                        {t('continue_as', { role: selectedRole === 'officer' ? t('role_officer_title') : t('role_citizen_title') })}
                     </button>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', color: '#6B7280', fontSize: '0.95rem', marginTop: '1.2rem' }}>
-                    Already have an account? 
+                    {t('have_account')} 
                     <Link to="/login" style={{ color: '#1E40AF', fontWeight: '700', textDecoration: 'none', padding: '0.5rem 1rem', background: '#F3F4F6', borderRadius: '50px', transition: 'all 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = '#E5E7EB'} onMouseOut={(e) => e.currentTarget.style.background = '#F3F4F6'}>
-                        Log in here 
+                        {t('log_in_here')} 
                     </Link>
                 </div>
             </div>

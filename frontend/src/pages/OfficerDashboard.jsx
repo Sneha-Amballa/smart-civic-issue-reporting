@@ -12,12 +12,14 @@ import SyncRoundedIcon from '@mui/icons-material/SyncRounded';
 import SmartToyRoundedIcon from '@mui/icons-material/SmartToyRounded';
 import PhotoCameraRoundedIcon from '@mui/icons-material/PhotoCameraRounded';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
+import Loading from '../components/Loading';
 
 const OfficerDashboard = () => {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const [issues, setIssues] = useState([]);
     const [loading, setLoading] = useState(true);
+
     const [viewMode, setViewMode] = useState('list');
     const [showResolveModal, setShowResolveModal] = useState(false);
     const [selectedIssueId, setSelectedIssueId] = useState(null);
@@ -27,8 +29,9 @@ const OfficerDashboard = () => {
 
     const getLocalizedDescription = (issue) => {
         if (!issue.description) return issue.voice_text || 'No description';
-        if (typeof issue.description === 'string') return issue.description;
-        return issue.description[i18n.language] || issue.description['en'] || issue.voice_text || 'No description';
+        const descObject = typeof issue.description === 'object' ? issue.description : {};
+        const langCode = i18n.language?.split('-')[0] || 'en';
+        return descObject[langCode] || descObject['en'] || issue.voice_text || 'No description';
     };
 
     const getFilteredIssues = () => {
@@ -133,8 +136,11 @@ const OfficerDashboard = () => {
         }
     };
 
+    if (loading) return <Loading message="Accessing Department Portal" />;
+
     return (
         <div className="citizen-dashboard">
+
             {/* Standard Government Header */}
             <header className="gov-header">
                 <div className="gov-header-content">
@@ -147,8 +153,8 @@ const OfficerDashboard = () => {
                     </div>
                     
                     <div className="gov-header-title-section">
-                        <h1 className="gov-title">Officer Dashboard</h1>
-                        <p className="gov-subtitle">CivicFix Administration • Department Control</p>
+                        <h1 className="gov-title">{t('officer_portal')}</h1>
+                        <p className="gov-subtitle">{t('dept_control')}</p>
                     </div>
                     
                     <div className="gov-header-actions">
@@ -157,7 +163,7 @@ const OfficerDashboard = () => {
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                                 <circle cx="12" cy="7" r="4" />
                             </svg>
-                            My Stats
+                            {t('my_profile')}
                         </button>
                         <button className="btn btn-logout no-print" onClick={() => { localStorage.removeItem('token'); navigate('/login'); }}>
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -165,7 +171,7 @@ const OfficerDashboard = () => {
                                 <polyline points="16 17 21 12 16 7" />
                                 <line x1="21" y1="12" x2="9" y2="12" />
                             </svg>
-                            Logout
+                            {t('logout')}
                         </button>
                     </div>
                 </div>
@@ -175,8 +181,8 @@ const OfficerDashboard = () => {
                 <section className="dashboard-section">
                     <div className="section-header dashboard-tabs-header">
                         <div>
-                            <h2 className="section-title">Department Snapshot</h2>
-                            <p className="section-subtitle">Real-time overview of your department's efficiency</p>
+                            <h2 className="section-title">{t('dept_snapshot')}</h2>
+                            <p className="section-subtitle">{t('dept_snapshot_desc')}</p>
                         </div>
                     </div>
 
@@ -187,8 +193,8 @@ const OfficerDashboard = () => {
                             </div>
                             <div className="stat-content">
                                 <div className="stat-value">{issues.filter(i => i.status === 'Reported').length}</div>
-                                <div className="stat-label">Pending Review</div>
-                                <div className="stat-meta">Awaiting assignment</div>
+                                <div className="stat-label">{t('pending_review')}</div>
+                                <div className="stat-meta">{t('awaiting_assignment')}</div>
                             </div>
                         </div>
                         <div className="stat-card stat-card-warning">
@@ -197,8 +203,8 @@ const OfficerDashboard = () => {
                             </div>
                             <div className="stat-content">
                                 <div className="stat-value">{issues.filter(i => i.status === 'Assigned' || i.status === 'In Progress').length}</div>
-                                <div className="stat-label">Active Workload</div>
-                                <div className="stat-meta">Currently being addressed</div>
+                                <div className="stat-label">{t('active_workload')}</div>
+                                <div className="stat-meta">{t('currently_addressed')}</div>
                             </div>
                         </div>
                         <div className="stat-card stat-card-success">
@@ -207,21 +213,21 @@ const OfficerDashboard = () => {
                             </div>
                             <div className="stat-content">
                                 <div className="stat-value">{issues.filter(i => i.status === 'Resolved' || i.status === 'Closed').length}</div>
-                                <div className="stat-label">Success Rate</div>
-                                <div className="stat-meta">Completed this month</div>
+                                <div className="stat-label">{t('success_rate')}</div>
+                                <div className="stat-meta">{t('completed_month')}</div>
                             </div>
                         </div>
                     </div>
 
                     <div className="section-header">
-                        <h2 className="section-title">Assigned & Department Issues</h2>
-                        <p className="section-subtitle">Manage and update issue statuses efficiently</p>
-                        
+                        <h2 className="section-title">{t('manage_issues_title')}</h2>
+                        <p className="section-subtitle">{t('manage_issues_desc')}</p>
+                    </div>
                         <div className="search-filter-bar">
                             <div className="search-wrapper">
                                 <input 
                                     type="text" 
-                                    placeholder="Search by ID, category, or status..." 
+                                    placeholder={t('search_placeholder')}
                                     className="search-input"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -256,7 +262,6 @@ const OfficerDashboard = () => {
                                 </button>
                             </div>
                         </div>
-                    </div>
 
                     {loading ? (
                         <div className="loading-state">
@@ -290,7 +295,7 @@ const OfficerDashboard = () => {
                                         <div className="issue-card-header">
                                             <div className="issue-category-group">
                                                 <span className="category-text">
-                                                    {t('cat_' + (issue.category === 'Street Lighting' ? 'lighting' : issue.category === 'Water Supply' ? 'water' : issue.category.toLowerCase()), { defaultValue: issue.category })}
+                                                    {t('cat_' + issue.category?.toLowerCase().replace(' ', '_'), { defaultValue: issue.category })}
                                                 </span>
                                                 {isAssigned && (
                                                     <span style={{ 
@@ -302,11 +307,11 @@ const OfficerDashboard = () => {
                                                         borderRadius: '6px',
                                                         textTransform: 'uppercase'
                                                     }}>
-                                                        Assigned to you
+                                                        {t('assigned_to_you')}
                                                     </span>
                                                 )}
                                                 {issue.status === 'Reported' && (new Date() - new Date(issue.timestamp)) / (1000 * 60 * 60 * 24) > 2 && (
-                                                    <span className="priority-chip">High Priority</span>
+                                                    <span className="priority-chip">{t('high_priority')}</span>
                                                 )}
                                             </div>
                                             <span className="issue-id">#{issue.id}</span>
@@ -324,10 +329,10 @@ const OfficerDashboard = () => {
                                                 </div>
                                                 <div className="info-chip">
                                                     <SmartToyRoundedIcon style={{ fontSize: '14px' }} />
-                                                    {aiConfidence}% Match
+                                                    {aiConfidence}% {t('match_label')}
                                                 </div>
-                                                <span className={`status-badge-new status-${issue.status.toLowerCase().replace(' ', '-')}`}>
-                                                    {t('status_' + issue.status.toLowerCase().replace(' ', ''), { defaultValue: issue.status })}
+                                                <span className={`status-badge-new status-${issue.status?.toLowerCase().replace(' ', '-')}`}>
+                                                    {t('status_' + issue.status?.toLowerCase().replace(' ', '_'), { defaultValue: issue.status })}
                                                 </span>
                                             </div>
 
@@ -340,11 +345,12 @@ const OfficerDashboard = () => {
                                                     className="action-select"
                                                     style={{ minWidth: '160px' }}
                                                 >
-                                                    <option value="Reported">Reported</option>
-                                                    <option value="Assigned">Assigned (Self)</option>
-                                                    <option value="In Progress">In Progress</option>
-                                                    <option value="Resolved">Resolved</option>
-                                                    <option value="Rejected">Rejected</option>
+                                                    <option value="Reported">{t('status_reported')}</option>
+                                                    <option value="Assigned">{t('status_assigned')}</option>
+                                                    <option value="In Progress">{t('status_inprogress')}</option>
+                                                    <option value="Resolved">{t('status_resolved')}</option>
+                                                    <option value="Closed">{t('status_closed')}</option>
+                                                    <option value="Rejected">{t('status_rejected')}</option>
                                                 </select>
                                                 {issue.image && (
                                                     <a 
@@ -372,9 +378,9 @@ const OfficerDashboard = () => {
                     <div className="modal-overlay">
                         <div className="modal-card">
                             <h3 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'center' }}>
-                                <CheckCircleRoundedIcon style={{ color: 'var(--success-color)' }} /> Verify Resolution
+                                <CheckCircleRoundedIcon style={{ color: 'var(--success-color)' }} /> {t('verify_resolution') || 'Verify Resolution'}
                             </h3>
-                            <p className="modal-subtitle">To mark this issue as Resolved, you must provide proof.</p>
+                            <p className="modal-subtitle">{t('provide_proof_desc') || 'To mark this issue as Resolved, you must provide proof.'}</p>
 
                             <div className="modal-field">
                                 <label style={{ display: 'block', fontWeight: '700', marginBottom: '0.75rem', color: '#1e293b' }}>
@@ -419,10 +425,10 @@ const OfficerDashboard = () => {
 
                             <div className="modal-actions">
                                 <button onClick={confirmResolution} disabled={resolving} className="btn btn-primary">
-                                    {resolving ? 'Verifying...' : 'Submit Resolution'}
+                                    {resolving ? t('verifying') : t('submit_resolution') || 'Submit Resolution'}
                                 </button>
                                 <button onClick={() => setShowResolveModal(false)} disabled={resolving} className="btn btn-secondary">
-                                    Cancel
+                                    {t('cancel')}
                                 </button>
                             </div>
                         </div>

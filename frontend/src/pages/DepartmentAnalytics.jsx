@@ -4,6 +4,8 @@ import axios from 'axios';
 import { Container, Typography, Grid, Paper, CircularProgress, Table, TableBody, TableCell, TableHead, TableRow, Alert } from '@mui/material';
 import { CustomBarChart, CustomPieChart } from '../components/CustomCharts';
 
+import Loading from '../components/Loading';
+
 const DepartmentAnalytics = () => {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -27,7 +29,8 @@ const DepartmentAnalytics = () => {
         fetchAnalytics();
     }, []);
 
-    if (loading) return <Container sx={{ mt: 5, display: 'flex', justifyContent: 'center' }}><CircularProgress /></Container>;
+    if (loading) return <Loading message="Generating Analytics Reports" />;
+
     if (error) return <Container sx={{ mt: 5 }}><Alert severity="error">{error}</Alert></Container>;
     if (!data) return null;
 

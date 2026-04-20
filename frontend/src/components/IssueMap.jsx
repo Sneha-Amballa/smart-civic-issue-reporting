@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import './IssueMap.css';
 
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -83,6 +84,7 @@ const IssueMap = ({
 }) => {
   const navigate = useNavigate();
   const [error, setError] = useState(null);
+  const { i18n } = useTranslation();
 
   // Helper to safely get string description
   const getDescription = useCallback((issue) => {
@@ -90,7 +92,7 @@ const IssueMap = ({
     try {
         let desc = issue.description || issue.voice_text || 'No description provided';
         if (typeof desc === 'object') {
-          const lang = localStorage.getItem('language') || 'en';
+          const lang = i18n.language || 'en';
           desc = desc[lang] || desc['en'] || Object.values(desc)[0] || 'No description provided';
         }
         return String(desc);
