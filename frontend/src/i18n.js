@@ -362,7 +362,8 @@ const resources = {
             "start_your_journey": "Start Your Journey",
             "no_activity_timeline_desc": "No activity yet. Report your first issue to see your timeline build out.",
             "profile_settings_title": "Profile Settings",
-            "choose_language_desc": "Choose your preferred language for the interface and AI reports."
+            "choose_language_desc": "Choose your preferred language for the interface and AI reports.",
+            "member_since": "Member Since"
         }
     },
     hi: {
@@ -724,7 +725,8 @@ const resources = {
             "start_your_journey": "अपनी यात्रा शुरू करें",
             "no_activity_timeline_desc": "अभी तक कोई गतिविधि नहीं। अपनी समयरेखा बनते देखने के लिए अपनी पहली समस्या रिपोर्ट करें।",
             "profile_settings_title": "प्रोफ़ाइल सेटिंग",
-            "choose_language_desc": "इंटरफ़ेस और एआई रिपोर्ट के लिए अपनी पसंदीदा भाषा चुनें।"
+            "choose_language_desc": "इंटरफ़ेस और एआई रिपोर्ट के लिए अपनी पसंदीदा भाषा चुनें।",
+            "member_since": "सदस्यता की तिथि"
         }
     },
     te: {
@@ -1086,7 +1088,8 @@ const resources = {
             "start_your_journey": "మీ ప్రయాణాన్ని ప్రారంభించండి",
             "no_activity_timeline_desc": "ఇంకా ఎలాంటి కార్యకలాపాలు లేవు. మీ టైమ్‌లైన్ నిర్మించబడటం చూడటానికి మీ మొదటి సమస్యను నివేదించండి.",
             "profile_settings_title": "ప్రొఫైల్ సెట్టింగ్‌లు",
-            "choose_language_desc": "ఇంటర్‌ఫేస్ మరియు AI నివేదికల కోసం మీకు నచ్చిన భాషను ఎంచుకోండి."
+            "choose_language_desc": "ఇంటర్‌ఫేస్ మరియు AI నివేదికల కోసం మీకు నచ్చిన భాషను ఎంచుకోండి.",
+            "member_since": "సభ్యత్వం ప్రారంభమైన తేదీ"
         }
     }
 };

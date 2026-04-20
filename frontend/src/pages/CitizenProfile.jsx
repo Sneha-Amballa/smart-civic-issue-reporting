@@ -21,6 +21,11 @@ import AssignmentRoundedIcon from '@mui/icons-material/AssignmentRounded';
 import BarChartRoundedIcon from '@mui/icons-material/BarChartRounded';
 import TrendingUpRoundedIcon from '@mui/icons-material/TrendingUpRounded';
 import HistoryRoundedIcon from '@mui/icons-material/HistoryRounded';
+import PersonRoundedIcon from '@mui/icons-material/PersonRounded';
+import EmailRoundedIcon from '@mui/icons-material/EmailRounded';
+import PhoneIphoneRoundedIcon from '@mui/icons-material/PhoneIphoneRounded';
+import CalendarMonthRoundedIcon from '@mui/icons-material/CalendarMonthRounded';
+import TranslateRoundedIcon from '@mui/icons-material/TranslateRounded';
 import Loading from '../components/Loading';
 
 const CitizenProfile = () => {
@@ -104,7 +109,7 @@ const CitizenProfile = () => {
 
     if (!data) return null;
 
-    const { stats, contributionScore, avgResponseTime, recentActivity } = data;
+    const { user, stats, contributionScore, avgResponseTime, recentActivity } = data;
     const totalReported = stats.total_reported || 0;
     const resolved = stats.closed_issues || 0;
     const active = stats.active_issues || 0;
@@ -162,7 +167,57 @@ const CitizenProfile = () => {
 
             <main className="container" style={{ paddingTop: '2rem' }}>
                 
-                {/* 1. HERO SECTION: XP RING & BADGES PREVIEW */}
+                {/* 1. CITIZEN IDENTITY CARD */}
+                <section style={{ marginBottom: '2rem' }}>
+                    <div className="gamified-card user-identity-card">
+                        <div className="identity-header">
+                            <div className="avatar-circle">
+                                {(user?.name || "U")[0].toUpperCase()}
+                            </div>
+                            <div className="identity-text" style={{ flex: 1 }}>
+                                <h2 className="user-name">{user?.name}</h2>
+                                <span className="user-role-badge">{t('role_citizen_title')}</span>
+                            </div>
+                            <div className="quick-language-select">
+                                <label><TranslateRoundedIcon sx={{ fontSize: 16 }} /> {t('preferred_language_label') || 'Language'}</label>
+                                <select 
+                                    className="minimal-select"
+                                    value={i18n.language.split('-')[0]}
+                                    onChange={(e) => handleLanguageUpdate(e.target.value)}
+                                >
+                                    <option value="en">English (EN)</option>
+                                    <option value="hi">हिन्दी (HI)</option>
+                                    <option value="te">తెలుగు (TE)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div className="identity-details-grid">
+                            <div className="detail-item">
+                                <EmailRoundedIcon className="detail-icon" />
+                                <div className="detail-content">
+                                    <label>{t('email')}</label>
+                                    <p>{user?.email}</p>
+                                </div>
+                            </div>
+                            <div className="detail-item">
+                                <PhoneIphoneRoundedIcon className="detail-icon" />
+                                <div className="detail-content">
+                                    <label>{t('phone')}</label>
+                                    <p>{user?.phone || 'Not Provided'}</p>
+                                </div>
+                            </div>
+                            <div className="detail-item">
+                                <CalendarMonthRoundedIcon className="detail-icon" />
+                                <div className="detail-content">
+                                    <label>{t('member_since') || 'Member Since'}</label>
+                                    <p>{new Date(user?.created_at).toLocaleDateString()}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* 2. HERO SECTION: XP RING & BADGES PREVIEW */}
                 <section className="xp-hero-section">
                     <div className="hero-layout">
                         {/* LEFT SIDE: XP & LEVEL */}
@@ -403,37 +458,6 @@ const CitizenProfile = () => {
                     )}
                 </section>
 
-                {/* 7. SETTINGS SECTION */}
-                <section style={{ paddingBottom: '3rem' }}>
-                    <h3 style={{ marginBottom: '1.5rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="24" height="24" style={{ color: 'var(--gray-600)' }}>
-                            <path d="M12.22 2h-.44a2 2 0 0 0-2 2a2 2 0 0 1-2 2a2 2 0 0 1-2-2a2 2 0 0 0-2-2h-.44a2 2 0 0 0-2 2a2 2 0 0 0 2 2a2 2 0 0 1 2 2a2 2 0 0 1-2 2a2 2 0 0 0-2 2a2 2 0 0 0 2 2a2 2 0 0 1 2 2a2 2 0 0 1-2 2a2 2 0 0 0-2 2h.44a2 2 0 0 0 2-2a2 2 0 0 1 2-2a2 2 0 0 1 2 2a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2a2 2 0 0 1 2-2a2 2 0 0 1 2 2a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2a2 2 0 0 0-2-2a2 2 0 0 1-2-2a2 2 0 0 1 2-2a2 2 0 0 0 2-2a2 2 0 0 0-2-2a2 2 0 0 1-2-2a2 2 0 0 1 2-2a2 2 0 0 0 2-2h-.44a2 2 0 0 0-2 2a2 2 0 0 1-2 2a2 2 0 0 1-2-2a2 2 0 0 0-2-2z" />
-                            <circle cx="12" cy="12" r="3" />
-                        </svg>
-                        {t('profile_settings_title')}
-                    </h3>
-                    
-                    <div className="gamified-card" style={{ padding: '2rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-                            <div>
-                                <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>{t('preferred_language')}</h4>
-                                <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-tertiary)' }}>{t('choose_language_desc')}</p>
-                            </div>
-                            <div className="input-group" style={{ margin: 0, minWidth: '200px' }}>
-                                <select 
-                                    className="input-field" 
-                                    style={{ margin: 0 }}
-                                    value={i18n.language.split('-')[0]}
-                                    onChange={(e) => handleLanguageUpdate(e.target.value)}
-                                >
-                                    <option value="en">{t('lang_en') || 'English'}</option>
-                                    <option value="hi">{t('lang_hi') || 'Hindi'}</option>
-                                    <option value="te">{t('lang_te') || 'Telugu'}</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                </section>
 
             </main>
         </div>

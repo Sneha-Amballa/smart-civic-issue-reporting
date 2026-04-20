@@ -256,7 +256,15 @@ exports.getCitizenProfile = async (req, res) => {
             LIMIT 5
         `;
 
+        // F. User Details
+        const userDetails = await sql`
+            SELECT name, email, phone, role, department, created_at
+            FROM users
+            WHERE id = ${citizenId}
+        `;
+
         res.json({
+            user: userDetails[0],
             stats: { ...stats[0], total_reported: totalReported[0].count },
             contributionScore: score,
             avgResponseTime: avgResponse[0].hours,
