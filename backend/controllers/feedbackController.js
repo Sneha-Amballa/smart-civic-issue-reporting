@@ -35,9 +35,9 @@ exports.submitFeedback = async (req, res) => {
                 // Insert into issue_citizens if missing
                 await sql`
                     INSERT INTO issue_citizens (issue_id, citizen_id, feedback_status, feedback_comment, rating)
-                    VALUES (${issueId}, ${citizenId}, ${response}, ${comment}, ${safeRating})
+                    VALUES (${issueId}, ${citizenId}, ${response}, ${JSON.stringify({ en: comment })}, ${safeRating})
                     ON CONFLICT (issue_id, citizen_id) 
-                    DO UPDATE SET feedback_status = ${response}, feedback_comment = ${comment}, rating = ${safeRating}
+                    DO UPDATE SET feedback_status = ${response}, feedback_comment = ${JSON.stringify({ en: comment })}, rating = ${safeRating}
                 `;
             } else {
                 return res.status(403).json({ message: "You are not authorized to give feedback on this issue." });
@@ -46,7 +46,7 @@ exports.submitFeedback = async (req, res) => {
             // Update existing record
             await sql`
                 UPDATE issue_citizens 
-                SET feedback_status = ${response}, feedback_comment = ${comment}, rating = ${safeRating}
+                SET feedback_status = ${response}, feedback_comment = ${JSON.stringify({ en: comment })}, rating = ${safeRating}
                 WHERE issue_id = ${issueId} AND citizen_id = ${citizenId}
             `;
         }

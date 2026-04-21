@@ -838,3 +838,81 @@
         justify-content: center;
     }
 }
+
+/* ============================================================ 
+   ACTION REQUIRED BANNER - CITIZEN FEEDBACK PROMPT
+============================================================ */
+.action-required-banner {
+    background: #ecfdf5;
+    border: 1px solid #10B981;
+    border-left: 6px solid #10B981;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.08);
+}
+
+.banner-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.banner-icon {
+    width: 44px;
+    height: 44px;
+    background: #10B981;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+}
+
+.banner-left h4 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #065F46;
+}
+
+.banner-left p {
+    margin: 4px 0 0 0;
+    font-size: 0.85rem;
+    color: #065F46;
+    opacity: 0.8;
+}
+
+.btn-banner-action {
+    background: #065F46;
+    color: white;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-weight: 800;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-banner-action:hover {
+    background: #047857;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(6, 95, 70, 0.2);
+}
+
+@media (max-width: 768px) {
+    .action-required-banner {
+        flex-direction: column;
+        gap: 16px;
+        align-items: stretch;
+        text-align: center;
+    }
+    .banner-left {
+        flex-direction: column;
+    }
+}

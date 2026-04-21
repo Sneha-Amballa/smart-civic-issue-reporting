@@ -251,6 +251,22 @@ const Dashboard = () => {
                 {/* 1. OVERVIEW & CATEGORIES COMBINED */}
                 {mainTab === 'overview' && (
                     <section className="dashboard-section combined-overview">
+                        {/* ACTION REQUIRED ALERTS */}
+                        {stats.resolved > 0 && (
+                            <div className="action-required-banner">
+                                <div className="banner-left">
+                                    <div className="banner-icon"><ResolvedIcon /></div>
+                                    <div>
+                                        <h4>{t('verification_required_title') || 'Verification Required'}</h4>
+                                        <p>{t('verification_required_desc', { count: stats.resolved }) || `You have ${stats.resolved} resolved issues awaiting your verification.`}</p>
+                                    </div>
+                                </div>
+                                <button className="btn-banner-action" onClick={() => { setMainTab('tracker'); setSelectedStatus('Resolved'); }}>
+                                    {t('review_now') || 'REVIEW NOW'}
+                                </button>
+                            </div>
+                        )}
+
                         {/* TOP STATS ROW */}
                         <div className="stats-grid">
                             <div className="stat-card stat-total">

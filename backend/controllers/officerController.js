@@ -443,21 +443,21 @@ const updateIssueStatus = async (req, res) => {
         const { id } = req.params;
         const { status } = req.body;
 
-        if (!['In Progress', 'Resolved', 'Rejected'].includes(status)) {
-            return res.status(400).json({ message: "Invalid status" });
+        if (!['In Progress', 'Resolved', 'Rejected', 'Assigned'].includes(status)) {
+            return res.status(400).json({ message: `Invalid status: ${status}. Allowed: In Progress, Resolved, Rejected, Assigned.` });
         }
 
         const currentIssue = await sql`SELECT status, citizen_id FROM issues WHERE id = ${id}`;
-        if (currentIssue.length === 0) return res.status(404).json({ message: "Issue not found" });
+        if (currentIssue.length === 0) return res.status(404).json({ message: `Issue ID ${id} not found` });
         const { status: currentStatus, citizen_id: citizenId } = currentIssue[0];
 
         const allowedTransitions = {
-            'Reported': ['Assigned', 'In Progress', 'Rejected'],
-            'Flagged': ['Assigned', 'In Progress', 'Rejected'],
-            'Assigned': ['In Progress', 'Rejected'],
+            'Reported': ['Assigned', 'In Progress', 'Resolved', 'Rejected'],
+            'Flagged': ['Assigned', 'In Progress', 'Resolved', 'Rejected'],
+            'Assigned': ['In Progress', 'Resolved', 'Rejected'],
             'In Progress': ['Resolved', 'Rejected'],
             'Resolved': [],
-            'Reopened': ['Assigned', 'In Progress', 'Rejected'],
+            'Reopened': ['Assigned', 'In Progress', 'Resolved', 'Rejected'],
             'Closed': [],
             'Escalated': ['Assigned', 'Resolved']
         };
@@ -471,7 +471,8 @@ const updateIssueStatus = async (req, res) => {
             if (!validNext.includes(status)) {
                 return res.status(400).json({
                     message: `Invalid State Transition. Cannot move from '${currentStatus}' to '${status}'.`,
-                    allowed: validNext
+                    allowed: validNext,
+                    current: currentStatus
                 });
             }
         }
@@ -534,8 +535,11 @@ const updateIssueStatus = async (req, res) => {
         } else if (status === 'Resolved') {
             const { image, latitude, longitude } = req.body;
 
-            if (!image || !latitude || !longitude) {
-                return res.status(400).json({ message: "Resolution proof (image) and location are required." });
+            if (!image) {
+                return res.status(400).json({ message: "Resolution proof (image) is required." });
+            }
+            if (latitude === undefined || latitude === null || longitude === undefined || longitude === null) {
+                return res.status(400).json({ message: "Location coordinates are required for resolution proof." });
             }
 
             let resolutionImageUrl = '';

@@ -26,9 +26,6 @@ const OfficerDashboard = () => {
     const [resolutionImage, setResolutionImage] = useState(null);
     const [resolving, setResolving] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [isCameraActive, setIsCameraActive] = useState(false);
-    const videoRef = useRef(null);
-    const streamRef = useRef(null);
 
     const getLocalizedDescription = (issue) => {
         if (!issue.description) return issue.voice_text || 'No description';
@@ -81,38 +78,6 @@ const OfficerDashboard = () => {
         }
     };
 
-    const startCamera = async () => {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-            streamRef.current = stream;
-            if (videoRef.current) videoRef.current.srcObject = stream;
-            setIsCameraActive(true);
-        } catch (err) {
-            console.error(err);
-            alert("Camera access denied");
-        }
-    };
-
-    const stopCamera = () => {
-        if (streamRef.current) {
-            streamRef.current.getTracks().forEach(track => track.stop());
-            streamRef.current = null;
-        }
-        setIsCameraActive(false);
-    };
-
-    const capturePhoto = () => {
-        const canvas = document.createElement('canvas');
-        const video = videoRef.current;
-        if (!video) return;
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0);
-        setResolutionImage(canvas.toDataURL('image/jpeg'));
-        stopCamera();
-    };
-
     const handleImageUpload = (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -124,36 +89,54 @@ const OfficerDashboard = () => {
         }
     };
 
-    const confirmResolution = () => {
+    const confirmResolution = async () => {
         if (!resolutionImage) {
-            alert("Please upload a proof image.");
+            alert("Please provide a proof image (Upload).");
             return;
         }
+
         setResolving(true);
+        
         if (!navigator.geolocation) {
-            alert("Geolocation is not supported by your browser");
+            alert("Geolocation is not supported by your browser. We need it as proof of visit.");
             setResolving(false);
             return;
         }
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const { latitude, longitude } = position.coords;
-                updateStatus(selectedIssueId, 'Resolved', {
-                    image: resolutionImage,
-                    latitude,
-                    longitude
+
+        // Use a Promise to handle geolocation with timeout
+        const getPosition = () => {
+            return new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
                 });
-                setShowResolveModal(false);
-                setResolutionImage(null);
-                setSelectedIssueId(null);
-                setResolving(false);
-            },
-            (err) => {
-                console.error(err);
-                alert("Unable to retrieve your location. Location is mandatory for resolution.");
-                setResolving(false);
-            }
-        );
+            });
+        };
+
+        try {
+            const position = await getPosition();
+            const { latitude, longitude } = position.coords;
+
+            await updateStatus(selectedIssueId, 'Resolved', {
+                image: resolutionImage,
+                latitude,
+                longitude
+            });
+
+            // If we reached here, success!
+            setShowResolveModal(false);
+            setResolutionImage(null);
+            setSelectedIssueId(null);
+        } catch (err) {
+            console.error("Resolution Error:", err);
+            let errMsg = "Failed to capture location or submit resolution.";
+            if (err.code === 1) errMsg = "Location permission denied. Please allow location access to submit proof.";
+            if (err.code === 3) errMsg = "Location request timed out. Please try again.";
+            alert(errMsg);
+        } finally {
+            setResolving(false);
+        }
     };
 
     const updateStatus = async (id, newStatus, extraData = {}) => {
@@ -167,7 +150,8 @@ const OfficerDashboard = () => {
             fetchIssues();
         } catch (err) {
             console.error(err);
-            alert('Failed to update status');
+            const errMsg = err.response?.data?.message || 'Failed to update status';
+            alert(`Error: ${errMsg}`);
         }
     };
 
@@ -411,99 +395,62 @@ const OfficerDashboard = () => {
                 {/* Resolution Modal */}
                 {showResolveModal && (
                     <div className="modal-overlay">
-                        <div className="modal-card">
-                            <h3 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'center' }}>
-                                <CheckCircleRoundedIcon style={{ color: 'var(--success-color)' }} /> {t('verify_resolution') || 'Verify Resolution'}
+                        <div className="modal-card modal-resolution-card">
+                            <h3 className="modal-title-v4">
+                                <CheckCircleRoundedIcon className="icon-success" /> 
+                                {t('verify_resolution')}
                             </h3>
-                            <p className="modal-subtitle">{t('provide_proof_desc') || 'To mark this issue as Resolved, you must provide proof.'}</p>
+                            <p className="modal-subtitle-v4">{t('provide_proof_desc')}</p>
 
-                            <div className="modal-field">
-                                <label style={{ display: 'block', fontWeight: '700', marginBottom: '0.75rem', color: '#1e293b' }}>
-                                    1. Provide Resolution Proof (Image)
+                            <div className="modal-field-v4">
+                                <label className="field-label">
+                                    1. {t('provide_resolution_proof') || 'Provide Resolution Proof (Image)'}
                                 </label>
                                 
-                                {!resolutionImage && !isCameraActive && (
-                                    <div style={{ display: 'flex', gap: '1rem' }}>
-                                        <div 
-                                            style={{ 
-                                                flex: 1,
-                                                border: '2px dashed #93c5fd', 
-                                                borderRadius: '12px', 
-                                                padding: '1.5rem', 
-                                                textAlign: 'center', 
-                                                background: '#eff6ff', 
-                                                cursor: 'pointer'
-                                            }} 
-                                            onClick={() => document.getElementById('resolution-upload').click()}
-                                        >
-                                            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto 10px auto', display: 'block' }}>
-                                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                                                <circle cx="8.5" cy="8.5" r="1.5" />
-                                                <polyline points="21 15 16 10 5 21" />
-                                            </svg>
-                                            <p style={{ color: '#1e3a8a', fontWeight: '600', fontSize: '0.9rem', margin: '0' }}>Upload File</p>
-                                        </div>
-
-                                        <div 
-                                            style={{ 
-                                                flex: 1,
-                                                border: '2px dashed #93c5fd', 
-                                                borderRadius: '12px', 
-                                                padding: '1.5rem', 
-                                                textAlign: 'center', 
-                                                background: '#eff6ff', 
-                                                cursor: 'pointer'
-                                            }} 
-                                            onClick={startCamera}
-                                        >
-                                            <PhotoCameraRoundedIcon style={{ fontSize: '30px', color: '#3b82f6', marginBottom: '10px' }} />
-                                            <p style={{ color: '#1e3a8a', fontWeight: '600', fontSize: '0.9rem', margin: '0' }}>Take Photo</p>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {isCameraActive && (
-                                    <div className="camera-view-container" style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden', background: '#000' }}>
-                                        <video ref={videoRef} autoPlay playsInline style={{ width: '100%', display: 'block' }} />
-                                        <div className="camera-controls" style={{ position: 'absolute', bottom: '20px', left: '0', right: '0', display: 'flex', justifyContent: 'center', gap: '1.5rem' }}>
-                                            <button className="btn-capture" onClick={capturePhoto} style={{ width: '60px', height: '60px', borderRadius: '50%', border: '4px solid white', background: 'rgba(255,255,255,0.3)', cursor: 'pointer' }}></button>
-                                            <button className="btn-cancel-cam" onClick={stopCamera} style={{ background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '20px', cursor: 'pointer' }}>Cancel</button>
+                                {!resolutionImage && (
+                                    <div className="proof-options single-option">
+                                        <div className="proof-card upload-card full-width" onClick={() => document.getElementById('resolution-upload').click()}>
+                                            <div className="icon-circle">
+                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                                    <polyline points="17 8 12 3 7 8" />
+                                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                                </svg>
+                                            </div>
+                                            <p>{t('upload_file') || 'Upload File'}</p>
                                         </div>
                                     </div>
                                 )}
 
                                 {resolutionImage && (
-                                    <div style={{ position: 'relative' }}>
-                                        <img src={resolutionImage} alt="Preview" className="image-preview" style={{ width: '100%', borderRadius: '12px', border: '1px solid #e2e8f0', objectFit: 'contain', maxHeight: '250px' }} />
-                                        <button 
-                                            onClick={() => setResolutionImage(null)} 
-                                            style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer' }}
-                                        >
-                                            ✕
-                                        </button>
+                                    <div className="preview-wrapper">
+                                        <img src={resolutionImage} alt="Resolution Proof" className="proof-preview-img" />
+                                        <button className="remove-proof-btn" onClick={() => setResolutionImage(null)}>✕</button>
                                     </div>
                                 )}
-
-                                <input 
-                                    id="resolution-upload"
-                                    type="file" 
-                                    accept="image/*" 
-                                    onChange={handleImageUpload} 
-                                    style={{ display: 'none' }} 
-                                />
+                                <input type="file" id="resolution-upload" hidden accept="image/*" onChange={handleImageUpload} />
                             </div>
 
-                            <div className="modal-field">
-                                <label>2. GPS Location</label>
-                                <p className="field-hint">We will automatically capture your current GPS location as proof of visit.</p>
+                            <div className="modal-field-v4">
+                                <label className="field-label">
+                                    2. {t('gps_location_label')}
+                                </label>
+                                <div className="location-info-pannel">
+                                    <div className="loc-dot pulse"></div>
+                                    <p>{t('automatic_gps_desc')}</p>
+                                </div>
                             </div>
 
-                            <div className="modal-actions">
-                                <button onClick={confirmResolution} disabled={resolving} className="btn btn-primary">
-                                    {resolving ? t('verifying') : t('submit_resolution') || 'Submit Resolution'}
-                                </button>
-                                <button onClick={() => setShowResolveModal(false)} disabled={resolving} className="btn btn-secondary">
+                            <div className="modal-actions-v4">
+                                <button className="btn-cancel-v4" onClick={() => { setShowResolveModal(false); }}>
                                     {t('cancel')}
+                                </button>
+                                <button 
+                                    className="btn-submit-v4" 
+                                    disabled={!resolutionImage || resolving} 
+                                    onClick={confirmResolution}
+                                >
+                                    {resolving ? <span className="loader-mini"></span> : t('submit_resolution')}
                                 </button>
                             </div>
                         </div>

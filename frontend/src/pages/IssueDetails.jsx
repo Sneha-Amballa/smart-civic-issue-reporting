@@ -11,7 +11,9 @@ import {
     CalendarTodayRounded as DateIcon,
     CategoryRounded as CategoryIcon,
     ArrowBackRounded as BackIcon,
-    CheckCircleRounded as CheckIcon
+    CheckCircleRounded as CheckIcon,
+    StarRounded as StarIcon,
+    StarOutlineRounded as StarOutlineIcon
 } from '@mui/icons-material';
 import Loading from '../components/Loading';
 import '../styles/IssueDetails.css';
@@ -30,15 +32,38 @@ const IssueDetails = () => {
     const navigate = useNavigate();
     const { t, i18n } = useTranslation();
 
+    const [resolving, setResolving] = useState(false);
     const [issue, setIssue] = useState(null);
     const [comments, setComments] = useState([]);
     const [newComment, setNewComment] = useState('');
     const [loading, setLoading] = useState(true);
+    const [userRating, setUserRating] = useState(5);
+    const [citizenFeedback, setCitizenFeedback] = useState('');
 
     useEffect(() => {
         fetchIssueDetails();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id]);
+
+    const submitFeedback = async (response) => {
+        try {
+            setResolving(true);
+            const token = localStorage.getItem('token');
+            await axios.post(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/feedback/${id}`, {
+                response: response,
+                comment: citizenFeedback || (response === 'Resolved' ? 'Confirmed by Citizen' : 'Rejected by Citizen'),
+                rating: userRating
+            }, { headers: { Authorization: `Bearer ${token}` } });
+            
+            alert(response === 'Resolved' ? "Thank you for verifying! Issue status updated." : "Reopen request submitted.");
+            fetchIssueDetails();
+        } catch (err) {
+            console.error(err);
+            alert(err.response?.data?.message || "Failed to submit feedback");
+        } finally {
+            setResolving(false);
+        }
+    };
 
     const fetchIssueDetails = async () => {
         try {
@@ -249,6 +274,77 @@ const IssueDetails = () => {
                                 <div className="dot"></div> {t('status_' + issue.status?.toLowerCase().replace(' ', '_'), { defaultValue: issue.status })}
                             </div>
                         </div>
+
+                        {issue.status === 'Resolved' && localStorage.getItem('role') === 'citizen' && issue.is_linked && (
+                            <>
+                                <div className="section-divider" />
+                                    <div className="verification-card-content">
+                                        <div className="verification-header">
+                                            <VerifiedIcon style={{ color: 'var(--success-color, #10B981)' }} />
+                                            <span>{t('verify_resolution_title')}</span>
+                                        </div>
+                                        <p className="verification-desc">
+                                            {t('verify_resolution_desc')}
+                                        </p>
+                                        
+                                        {issue.resolution_image_url && (
+                                            <div className="resolution-proof-box">
+                                                <div className="proof-label">{t('resolution_proof')}</div>
+                                                <img 
+                                                    src={issue.resolution_image_url} 
+                                                    alt="Resolution Proof" 
+                                                    className="resolution-proof-img"
+                                                    onClick={() => window.open(issue.resolution_image_url, '_blank')}
+                                                />
+                                            </div>
+                                        )}
+
+                                        <div className="feedback-form-v4">
+                                            <div className="rating-selector">
+                                                <label className="right-label">{t('rating_label')}</label>
+                                                <div className="stars-row">
+                                                    {[1, 2, 3, 4, 5].map((star) => (
+                                                        <div 
+                                                            key={star} 
+                                                            onClick={() => setUserRating(star)}
+                                                            className={`star-wrapper ${userRating >= star ? 'active' : ''}`}
+                                                        >
+                                                            {userRating >= star ? <StarIcon /> : <StarOutlineIcon />}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div className="feedback-input-box">
+                                                <label className="right-label">{t('feedback_label')}</label>
+                                                <textarea 
+                                                    className="citizen-feedback-textarea"
+                                                    placeholder={t('feedback_placeholder')}
+                                                    value={citizenFeedback}
+                                                    onChange={(e) => setCitizenFeedback(e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="verification-actions">
+                                            <button 
+                                                className="btn-verify-yes"
+                                                onClick={() => submitFeedback('Resolved')}
+                                                disabled={resolving}
+                                            >
+                                                <CheckIcon style={{ fontSize: 18 }} /> {t('it_is_fixed')}
+                                            </button>
+                                            <button 
+                                                className="btn-verify-no"
+                                                onClick={() => submitFeedback('Not Resolved')}
+                                                disabled={resolving}
+                                            >
+                                                {t('still_broken')}
+                                            </button>
+                                        </div>
+                                    </div>
+                            </>
+                        )}
 
                         <div className="section-divider" />
 
